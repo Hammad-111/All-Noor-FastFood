@@ -44,7 +44,7 @@ export const translations = {
         totalBill: 'Total Bill',
         orderWhatsapp: 'Order on WhatsApp',
 
-        // Profile
+        // Profile & Setting Detail
         accountOverview: 'Account Overview',
         myOrders: 'My Orders',
         paymentMethods: 'Payment Methods',
@@ -53,6 +53,28 @@ export const translations = {
         support: 'Support',
         logout: 'Log Out',
         changeLanguage: 'Change Language',
+
+        // Detailed Sections
+        orderNo: 'Order',
+        processing: 'Processing',
+        delivered: 'Delivered',
+        homeLabel: 'Home',
+        officeLabel: 'Office',
+        edit: 'Edit',
+        delete: 'Delete',
+        addNewAddress: '+ Add New Address',
+        chatWhatsapp: 'Chat on WhatsApp',
+        callHotline: 'Call Hotline',
+        aboutShop: 'About Al Noor Fast Food',
+        privacyPolicy: 'Privacy Policy',
+        termsConditions: 'Terms & Conditions',
+        saveAddress: 'Save Address',
+        cancel: 'Cancel',
+        setAsDefault: 'Set as Default',
+        newAddress: 'New Address',
+        editAddress: 'Edit Address',
+        addressTitlePlaceholder: 'Title (e.g. Home, Office)',
+        addressDetailsPlaceholder: 'Full Address Details...',
     },
     ur: {
         // App General
@@ -75,7 +97,7 @@ export const translations = {
             'Rice': 'چاول',
             'Chicken': 'چکن',
             'Soup/Salad': 'سوپ/سلاد',
-            'Drinks/Sides': 'ڈررنکس/سائیڈز'
+            'Drinks/Sides': 'ڈرنکس/سائیڈز'
         },
         specials: 'خاص',
         seeAll: 'سب دیکھیں',
@@ -99,7 +121,7 @@ export const translations = {
         totalBill: 'کل بل',
         orderWhatsapp: 'واٹس ایپ پر آرڈر کریں',
 
-        // Profile
+        // Profile & Setting Detail
         accountOverview: 'اکاؤنٹ کی تفصیلات',
         myOrders: 'میرے آرڈرز',
         paymentMethods: 'ادائیگی کے طریقے',
@@ -108,5 +130,27 @@ export const translations = {
         support: 'سپورٹ',
         logout: 'لاگ آؤٹ',
         changeLanguage: 'زبان تبدیل کریں',
+
+        // Detailed Sections
+        orderNo: 'آرڈر نمبر',
+        processing: 'تیاری جاری ہے',
+        delivered: 'پہنچ گیا',
+        homeLabel: 'گھر',
+        officeLabel: 'دفتر',
+        edit: 'ایڈٹ',
+        delete: 'ختم کریں',
+        addNewAddress: '+ نیا پتہ شامل کریں',
+        chatWhatsapp: 'واٹس ایپ پر بات کریں',
+        callHotline: 'ہاٹ لائن پر کال کریں',
+        aboutShop: 'النور فاسٹ فوڈ کے بارے میں',
+        privacyPolicy: 'پرائیویسی پالیسی',
+        termsConditions: 'شرائط و ضوابط',
+        saveAddress: 'پتہ محفوظ کریں',
+        cancel: 'منسوخ کریں',
+        setAsDefault: 'ڈیفالٹ سیٹ کریں',
+        newAddress: 'نیا پتہ',
+        editAddress: 'پتہ تبدیل کریں',
+        addressTitlePlaceholder: 'عنوان (مثلاً گھر، دفتر)',
+        addressDetailsPlaceholder: 'پتے کی مکمل تفصیلات...',
     }
 };

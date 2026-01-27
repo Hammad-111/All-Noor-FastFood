@@ -9,7 +9,7 @@ import { useCart } from '../context/CartContext';
 
 const SettingDetailScreen = ({ route }) => {
     const navigation = useNavigation();
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const { addresses, addAddress, updateAddress, deleteAddress } = useCart();
     const title = route?.params?.title || "Detail";
 
@@ -67,10 +67,10 @@ const SettingDetailScreen = ({ route }) => {
             {[1, 2].map((id) => (
                 <View key={id} style={styles.orderCard}>
                     <View style={styles.orderHeader}>
-                        <Text style={styles.orderNo}>Order #ALN-{1234 + id}</Text>
+                        <Text style={styles.orderNo}>{t('orderNo')} #ALN-{1234 + id}</Text>
                         <View style={[styles.statusBadge, { backgroundColor: id === 1 ? '#FFF8E1' : '#E8F5E9' }]}>
                             <Text style={[styles.statusText, { color: id === 1 ? '#FFB300' : '#4CAF50' }]}>
-                                {id === 1 ? 'Processing' : 'Delivered'}
+                                {id === 1 ? t('processing') : t('delivered')}
                             </Text>
                         </View>
                     </View>
@@ -92,7 +92,7 @@ const SettingDetailScreen = ({ route }) => {
                     <Text style={styles.paymentIcon}>💵</Text>
                 </View>
                 <View style={styles.paymentInfo}>
-                    <Text style={styles.paymentTitle}>Cash on Delivery</Text>
+                    <Text style={styles.paymentTitle}>{t('cashOnDelivery')}</Text>
                     <Text style={styles.paymentSub}>Default Payment Method</Text>
                 </View>
                 <View style={styles.checkCircleActive}><View style={styles.checkDot} /></View>
@@ -114,7 +114,7 @@ const SettingDetailScreen = ({ route }) => {
             {addresses.map((item) => (
                 <View key={item.id} style={styles.addressCard}>
                     <View style={styles.addressIconBox}>
-                        <Text style={styles.addressIcon}>{item.title === 'Home' ? '🏠' : '🏢'}</Text>
+                        <Text style={styles.addressIcon}>{item.title === 'Home' || item.title === 'گھر' ? '🏠' : '🏢'}</Text>
                     </View>
                     <View style={styles.addressInfo}>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -124,46 +124,46 @@ const SettingDetailScreen = ({ route }) => {
                         <Text style={styles.addressText}>{item.address}</Text>
                     </View>
                     <View style={styles.addressActions}>
-                        <TouchableOpacity onPress={() => openModal(item)}><Text style={styles.editLink}>Edit</Text></TouchableOpacity>
-                        <TouchableOpacity onPress={() => deleteAddress(item.id)} style={{ marginTop: 10 }}><Text style={styles.deleteLink}>Delete</Text></TouchableOpacity>
+                        <TouchableOpacity onPress={() => openModal(item)}><Text style={styles.editLink}>{t('edit')}</Text></TouchableOpacity>
+                        <TouchableOpacity onPress={() => deleteAddress(item.id)} style={{ marginTop: 10 }}><Text style={styles.deleteLink}>{t('delete')}</Text></TouchableOpacity>
                     </View>
                 </View>
             ))}
 
             <TouchableOpacity style={styles.addBtn} onPress={() => openModal()}>
-                <Text style={styles.addBtnText}>+ Add New Address</Text>
+                <Text style={styles.addBtnText}>{t('addNewAddress')}</Text>
             </TouchableOpacity>
 
             <Modal animationType="slide" transparent visible={modalVisible}>
                 <View style={styles.modalBg}>
                     <View style={styles.modalContainer}>
-                        <Text style={styles.modalTitle}>{editingAddr ? 'Edit Address' : 'New Address'}</Text>
+                        <Text style={styles.modalTitle}>{editingAddr ? t('editAddress') : t('newAddress')}</Text>
 
                         <TextInput
                             style={styles.modalInput}
-                            placeholder="Title (e.g. Home, Office)"
+                            placeholder={t('addressTitlePlaceholder')}
                             value={addrTitle}
                             onChangeText={setAddrTitle}
                         />
                         <TextInput
                             style={[styles.modalInput, { minHeight: 100, textAlignVertical: 'top' }]}
-                            placeholder="Full Address Details..."
+                            placeholder={t('addressDetailsPlaceholder')}
                             value={addrFull}
                             onChangeText={setAddrFull}
                             multiline
                         />
 
                         <View style={styles.switchRow}>
-                            <Text style={styles.switchLabel}>Set as Default</Text>
+                            <Text style={styles.switchLabel}>{t('setAsDefault')}</Text>
                             <Switch value={isDefault} onValueChange={setIsDefault} trackColor={{ true: COLORS.primary }} />
                         </View>
 
                         <View style={styles.modalFooter}>
                             <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.cancelBtn}>
-                                <Text style={styles.cancelBtnText}>Cancel</Text>
+                                <Text style={styles.cancelBtnText}>{t('cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity onPress={handleSave} style={styles.saveBtn}>
-                                <Text style={styles.saveBtnText}>Save Address</Text>
+                                <Text style={styles.saveBtnText}>{t('saveAddress')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -176,12 +176,12 @@ const SettingDetailScreen = ({ route }) => {
         <ScrollView>
             <TouchableOpacity style={styles.supportCard} onPress={() => Linking.openURL('https://wa.me/923017891391')}>
                 <Text style={styles.supportEmoji}>💬</Text>
-                <Text style={styles.supportTitle}>Chat on WhatsApp</Text>
+                <Text style={styles.supportTitle}>{t('chatWhatsapp')}</Text>
                 <Text style={styles.supportArrow}>›</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.supportCard} onPress={() => Linking.openURL('tel:+923017891391')}>
                 <Text style={styles.supportEmoji}>📞</Text>
-                <Text style={styles.supportTitle}>Call Hotline</Text>
+                <Text style={styles.supportTitle}>{t('callHotline')}</Text>
                 <Text style={styles.supportArrow}>›</Text>
             </TouchableOpacity>
         </ScrollView>
@@ -193,15 +193,13 @@ const SettingDetailScreen = ({ route }) => {
             <View style={styles.legalSection}>
                 <View style={styles.legalHeader}>
                     <Text style={styles.legalIcon}>🏢</Text>
-                    <Text style={styles.legalTitle}>About Al Noor Fast Food</Text>
+                    <Text style={styles.legalTitle}>{t('aboutShop')}</Text>
                 </View>
                 <Text style={styles.legalText}>
-                    Al Noor Fast Food has been serving the finest quality and taste since our inception.
-                    We are dedicated to providing fresh, hygienic, and delicious meals ranging from
-                    mouth-watering Burgers and Pizzas to traditional Karahi and Handi specialties.
-                    {"\n\n"}
-                    Our mission is to bring the authentic taste of premium fast food directly to your doorstep
-                    with speed and excellence.
+                    {language === 'ur' ?
+                        "النور فاسٹ فوڈ اپنے آغاز سے ہی بہترین معیار اور ذائقہ پیش کر رہا ہے۔ ہم تازہ، صحت بخش اور لذیذ کھانے فراہم کرنے کے لیے وقف ہیں جن میں برگر اور پیزا سے لے کر روایتی کڑاہی اور ہانڈی کی خصوصیات شامل ہیں۔\n\nہمارا مقصد پریمیم فاسٹ فوڈ کے مستند ذائقے کو براہ راست آپ کے دہلیز تک تیزی اور عمدگی کے ساتھ پہنچانا ہے۔" :
+                        "Al Noor Fast Food has been serving the finest quality and taste since our inception. We are dedicated to providing fresh, hygienic, and delicious meals ranging from mouth-watering Burgers and Pizzas to traditional Karahi and Handi specialties.\n\nOur mission is to bring the authentic taste of premium fast food directly to your doorstep with speed and excellence."
+                    }
                 </Text>
             </View>
 
@@ -209,15 +207,13 @@ const SettingDetailScreen = ({ route }) => {
             <View style={styles.legalSection}>
                 <View style={styles.legalHeader}>
                     <Text style={styles.legalIcon}>🛡️</Text>
-                    <Text style={styles.legalTitle}>Privacy Policy</Text>
+                    <Text style={styles.legalTitle}>{t('privacyPolicy')}</Text>
                 </View>
                 <Text style={styles.legalText}>
-                    Your privacy is important to us. Al Noor Fast Food collects minimal data necessary to
-                    process your orders and improve your experience.
-                    {"\n\n"}
-                    • We do not share your delivery address with third parties except for delivery purposes.
-                    {"\n"}• Your contact information is used only for order confirmation and support.
-                    {"\n"}• We use secure industry standards to protect your personal information.
+                    {language === 'ur' ?
+                        "آپ کی رازداری ہمارے لیے اہم ہے۔ النور فاسٹ فوڈ آپ کے آرڈرز پر کارروائی کرنے اور آپ کے تجربے کو بہتر بنانے کے لیے درکار کم سے کم ڈیٹا اکٹھا کرتا ہے۔\n\n• ہم آپ کا ڈیلیوری پتہ کسی تیسرے فریق کے ساتھ شیئر نہیں کرتے بجز ڈیلیوری کے مقاصد کے۔\n• آپ کی رابطے کی معلومات صرف آرڈر کی تصدیق اور سپورٹ کے لیے استعمال کی جاتی ہیں۔\n• ہم آپ کی ذاتی معلومات کی حفاظت کے لیے محفوظ صنعتی معیارات استعمال کرتے ہیں۔" :
+                        "Your privacy is important to us. Al Noor Fast Food collects minimal data necessary to process your orders and improve your experience.\n\n• We do not share your delivery address with third parties except for delivery purposes.\n• Your contact information is used only for order confirmation and support.\n• We use secure industry standards to protect your personal information."
+                    }
                 </Text>
             </View>
 
@@ -225,22 +221,19 @@ const SettingDetailScreen = ({ route }) => {
             <View style={styles.legalSection}>
                 <View style={styles.legalHeader}>
                     <Text style={styles.legalIcon}>📜</Text>
-                    <Text style={styles.legalTitle}>Terms & Conditions</Text>
+                    <Text style={styles.legalTitle}>{t('termsConditions')}</Text>
                 </View>
                 <Text style={styles.legalText}>
-                    By using this app, you agree to the following:
-                    {"\n\n"}
-                    1. Orders are subject to availability and delivery location limits.
-                    {"\n"}2. Delivery times are estimates and may vary based on weather or traffic.
-                    {"\n"}3. Prices are subject to change without prior notice.
-                    {"\n"}4. Cash on delivery must be paid in full upon arrival of the rider.
-                    {"\n"}5. Any issues with the food must be reported within 30 minutes of receipt.
+                    {language === 'ur' ?
+                        "اس ایپ کو استعمال کر کے، آپ درج ذیل سے اتفاق کرتے ہیں:\n\n1. آرڈرز دستیابی اور ڈیلیوری لوکیشن کی حدود کے تابع ہیں۔\n2. ڈیلیوری کے اوقات تخمینہ ہیں اور موسم یا ٹریفک کی بنیاد پر مختلف ہو سکتے ہیں۔\n3. قیمتیں بغیر کسی پیشگی اطلاع کے تبدیل کی جا سکتی ہیں۔\n4. رائیڈر کی آمد پر کیش آن ڈیلیوری کی مکمل ادائیگی کرنی ہوگی۔\n5. کھانے کے ساتھ کسی بھی مسئلے کی اطلاع موصول ہونے کے 30 منٹ کے اندر دینی ہوگی۔" :
+                        "By using this app, you agree to the following:\n\n1. Orders are subject to availability and delivery location limits.\n2. Delivery times are estimates and may vary based on weather or traffic.\n3. Prices are subject to change without prior notice.\n4. Cash on delivery must be paid in full upon arrival of the rider.\n5. Any issues with the food must be reported within 30 minutes of receipt."
+                    }
                 </Text>
             </View>
 
             <View style={styles.versionBox}>
-                <Text style={styles.versionText}>App Version 1.0.0 (Stable)</Text>
-                <Text style={styles.creditText}>Designed for Al Noor Fast Food Specialists</Text>
+                <Text style={styles.versionText}>{language === 'ur' ? 'ایپ ورژن 1.0.0 (مستحکم)' : 'App Version 1.0.0 (Stable)'}</Text>
+                <Text style={styles.creditText}>{language === 'ur' ? 'النور فاسٹ فوڈ سپیشلسٹ کے لیے تیار کردہ' : 'Designed for Al Noor Fast Food Specialists'}</Text>
             </View>
 
             <View style={{ height: 100 }} />

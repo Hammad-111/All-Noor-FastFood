@@ -17,14 +17,14 @@ const ProfileScreen = () => {
     const handleLanguageToggle = () => {
         toggleLanguage();
         const newLang = language === 'en' ? 'اردو' : 'English';
-        showToast(`Language changed to ${newLang}`);
+        showToast(language === 'en' ? `زبان تبدیل کر دی گئی ہے: ${newLang}` : `Language changed to ${newLang}`);
     };
 
     const menuItems = [
         { id: '1', title: t('myOrders'), icon: '📦', action: () => navigation.navigate('SettingDetail', { title: t('myOrders') }) },
         { id: '2', title: t('paymentMethods'), icon: '💳', action: () => navigation.navigate('SettingDetail', { title: t('paymentMethods') }) },
         { id: '3', title: t('deliveryAddressMenu'), icon: '📍', action: () => navigation.navigate('SettingDetail', { title: t('deliveryAddressMenu') }) },
-        { id: '4', title: t('changeLanguage'), icon: '🌐', value: language === 'en' ? 'Urdu' : 'English', action: handleLanguageToggle },
+        { id: '4', title: t('changeLanguage'), icon: '🌐', value: language === 'en' ? 'Urdu' : 'Urdu (اردو)', action: handleLanguageToggle },
         { id: '5', title: t('settings'), icon: '⚙️', action: () => navigation.navigate('SettingDetail', { title: t('settings') }) },
         { id: '6', title: t('support'), icon: '🎧', action: () => navigation.navigate('SettingDetail', { title: t('support') }) },
     ];
@@ -69,8 +69,8 @@ const ProfileScreen = () => {
                                 resizeMode="cover"
                             />
                         </Animated.View>
-                        <Text style={styles.userName}>Al Noor Fast Food</Text>
-                        <Text style={styles.userEmail}>Serving Quality & Taste</Text>
+                        <Text style={styles.userName}>{t('appName')} {t('tagline').includes('SPECIALIST') ? 'Fast Food' : ''}</Text>
+                        <Text style={styles.userEmail}>{language === 'ur' ? 'بہترین معیار اور ذائقہ' : 'Serving Quality & Taste'}</Text>
                     </View>
 
                     {/* Content Section */}

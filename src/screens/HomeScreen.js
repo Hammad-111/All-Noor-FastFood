@@ -154,7 +154,10 @@ const HomeScreen = () => {
                     {/* Header Section */}
                     <View style={styles.header}>
                         <View style={styles.topRow}>
-                            <TouchableOpacity style={styles.menuIconContainer}>
+                            <TouchableOpacity
+                                style={styles.menuIconContainer}
+                                onPress={() => navigation.navigate('ProfileTab')}
+                            >
                                 <View style={styles.menuBar} />
                                 <View style={[styles.menuBar, { width: 15 }]} />
                                 <View style={styles.menuBar} />
