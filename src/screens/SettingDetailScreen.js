@@ -187,11 +187,72 @@ const SettingDetailScreen = ({ route }) => {
         </ScrollView>
     );
 
+    const renderSettings = () => (
+        <ScrollView showsVerticalScrollIndicator={false}>
+            {/* About Section */}
+            <View style={styles.legalSection}>
+                <View style={styles.legalHeader}>
+                    <Text style={styles.legalIcon}>🏢</Text>
+                    <Text style={styles.legalTitle}>About Al Noor Fast Food</Text>
+                </View>
+                <Text style={styles.legalText}>
+                    Al Noor Fast Food has been serving the finest quality and taste since our inception.
+                    We are dedicated to providing fresh, hygienic, and delicious meals ranging from
+                    mouth-watering Burgers and Pizzas to traditional Karahi and Handi specialties.
+                    {"\n\n"}
+                    Our mission is to bring the authentic taste of premium fast food directly to your doorstep
+                    with speed and excellence.
+                </Text>
+            </View>
+
+            {/* Privacy Section */}
+            <View style={styles.legalSection}>
+                <View style={styles.legalHeader}>
+                    <Text style={styles.legalIcon}>🛡️</Text>
+                    <Text style={styles.legalTitle}>Privacy Policy</Text>
+                </View>
+                <Text style={styles.legalText}>
+                    Your privacy is important to us. Al Noor Fast Food collects minimal data necessary to
+                    process your orders and improve your experience.
+                    {"\n\n"}
+                    • We do not share your delivery address with third parties except for delivery purposes.
+                    {"\n"}• Your contact information is used only for order confirmation and support.
+                    {"\n"}• We use secure industry standards to protect your personal information.
+                </Text>
+            </View>
+
+            {/* Terms Section */}
+            <View style={styles.legalSection}>
+                <View style={styles.legalHeader}>
+                    <Text style={styles.legalIcon}>📜</Text>
+                    <Text style={styles.legalTitle}>Terms & Conditions</Text>
+                </View>
+                <Text style={styles.legalText}>
+                    By using this app, you agree to the following:
+                    {"\n\n"}
+                    1. Orders are subject to availability and delivery location limits.
+                    {"\n"}2. Delivery times are estimates and may vary based on weather or traffic.
+                    {"\n"}3. Prices are subject to change without prior notice.
+                    {"\n"}4. Cash on delivery must be paid in full upon arrival of the rider.
+                    {"\n"}5. Any issues with the food must be reported within 30 minutes of receipt.
+                </Text>
+            </View>
+
+            <View style={styles.versionBox}>
+                <Text style={styles.versionText}>App Version 1.0.0 (Stable)</Text>
+                <Text style={styles.creditText}>Designed for Al Noor Fast Food Specialists</Text>
+            </View>
+
+            <View style={{ height: 100 }} />
+        </ScrollView>
+    );
+
     const renderContent = () => {
         if (title === t('myOrders')) return renderOrders();
         if (title === t('paymentMethods')) return renderPayments();
         if (title === t('deliveryAddressMenu')) return renderAddress();
         if (title === t('support')) return renderSupport();
+        if (title === t('settings')) return renderSettings();
         return (
             <View style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>Updating Section...</Text>
@@ -269,7 +330,22 @@ const styles = StyleSheet.create({
     cancelBtn: { flex: 1, padding: 15, borderRadius: 15, alignItems: 'center', backgroundColor: '#F5F5F5' },
     cancelBtnText: { fontWeight: 'bold', color: '#666' },
     saveBtn: { flex: 2, padding: 15, borderRadius: 15, alignItems: 'center', backgroundColor: COLORS.primary },
-    saveBtnText: { fontWeight: 'bold', color: '#FFF' }
+    saveBtnText: { fontWeight: 'bold', color: '#FFF' },
+    // Legal & Settings
+    legalSection: {
+        backgroundColor: '#FFF',
+        borderRadius: 20,
+        padding: 20,
+        marginBottom: 15,
+        elevation: 2,
+    },
+    legalHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+    legalIcon: { fontSize: 20, marginRight: 10 },
+    legalTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.textDark },
+    legalText: { fontSize: 13, color: '#666', lineHeight: 20 },
+    versionBox: { alignItems: 'center', marginTop: 10, paddingBottom: 20 },
+    versionText: { fontSize: 12, color: '#AAA', fontWeight: '600' },
+    creditText: { fontSize: 10, color: '#CCC', marginTop: 4 }
 });
 
 export default SettingDetailScreen;
