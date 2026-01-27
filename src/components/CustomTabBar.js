@@ -8,20 +8,20 @@ import { useLanguage } from '../context/LanguageContext';
 const { width } = Dimensions.get('window');
 
 const TabItem = ({ route, options, isFocused, onPress, getIcon }) => {
-    const scaleAnim = React.useRef(new Animated.Value(isFocused ? 1.2 : 1)).current;
-    const translateAnim = React.useRef(new Animated.Value(isFocused ? -8 : 0)).current;
+    const scaleAnim = React.useRef(new Animated.Value(isFocused ? 1.15 : 1)).current;
+    const translateAnim = React.useRef(new Animated.Value(isFocused ? -5 : 0)).current;
     const opacityAnim = React.useRef(new Animated.Value(isFocused ? 1 : 0.6)).current;
-    const dotWidthAnim = React.useRef(new Animated.Value(isFocused ? 20 : 0)).current;
+    const dotWidthAnim = React.useRef(new Animated.Value(isFocused ? 15 : 0)).current;
 
     React.useEffect(() => {
         Animated.parallel([
             Animated.spring(scaleAnim, {
-                toValue: isFocused ? 1.2 : 1,
+                toValue: isFocused ? 1.15 : 1,
                 useNativeDriver: true,
                 friction: 5,
             }),
             Animated.spring(translateAnim, {
-                toValue: isFocused ? -8 : 0,
+                toValue: isFocused ? -5 : 0,
                 useNativeDriver: true,
                 friction: 5,
             }),
@@ -31,7 +31,7 @@ const TabItem = ({ route, options, isFocused, onPress, getIcon }) => {
                 useNativeDriver: true,
             }),
             Animated.timing(dotWidthAnim, {
-                toValue: isFocused ? 20 : 0,
+                toValue: isFocused ? 15 : 0,
                 duration: 200,
                 useNativeDriver: false // width is not supported by native driver
             })
@@ -146,23 +146,23 @@ const styles = StyleSheet.create({
         right: 0,
         alignItems: 'center',
         zIndex: 100,
-        paddingBottom: 13, // Push the actual tab bar up a bit from the bottom edge
-        paddingHorizontal: 20,
+        paddingBottom: 5, // Slightly more lift
+        paddingHorizontal: 12, // Wider (less side padding)
     },
     backgroundMask: {
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
-        height: 85, // Covers the bottom area
+        height: 70, // Lowered mask
         backgroundColor: COLORS.background, // Match screen background
-        opacity: 0.95, // Almost solid to hide text
+        opacity: 0.98, // More solid
     },
     tabBar: {
         flexDirection: 'row',
         backgroundColor: COLORS.primary,
-        height: 65, // Reduced from 75
-        borderRadius: 35, // More pill-shaped
+        height: 60, // Slimmer height
+        borderRadius: 30, // Tighter rounding
         paddingHorizontal: 15,
         paddingVertical: 10,
         justifyContent: 'space-around',

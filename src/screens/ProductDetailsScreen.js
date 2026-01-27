@@ -50,7 +50,7 @@ const ProductDetailsScreen = ({ route }) => {
 
     return (
         <View style={styles.mainContainer}>
-            <SplitScreen>
+            <SplitScreen ratio={0.42}>
                 <SafeAreaView style={styles.container} edges={['top']}>
                     {/* Top Section: Header & Image */}
                     <View style={styles.imageSection}>
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     imageSection: {
-        height: '40%',
+        height: '42%',
         paddingHorizontal: 20,
         alignItems: 'center',
     },
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     },
     infoSection: {
         flex: 1,
-        paddingTop: 30, // Reduced space for the wave
+        paddingTop: 50, // Space for the wave
         paddingHorizontal: 25,
     },
     infoContent: {

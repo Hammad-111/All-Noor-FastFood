@@ -8,6 +8,7 @@ import { getImage } from '../utils/imageMap';
 import { useNavigation } from '@react-navigation/native';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import ProductCard from '../components/ProductCard';
 
 const { width } = Dimensions.get('window');
@@ -147,81 +148,83 @@ const HomeScreen = () => {
     };
 
     return (
-        <SplitScreen>
-            <View style={styles.container}>
-                {/* Header Section */}
-                <View style={styles.header}>
-                    <View style={styles.topRow}>
-                        <TouchableOpacity style={styles.menuIconContainer}>
-                            <View style={styles.menuBar} />
-                            <View style={[styles.menuBar, { width: 15 }]} />
-                            <View style={styles.menuBar} />
-                        </TouchableOpacity>
+        <SplitScreen ratio={0.35}>
+            <SafeAreaView style={styles.container} edges={['top']}>
+                <View style={styles.container}>
+                    {/* Header Section */}
+                    <View style={styles.header}>
+                        <View style={styles.topRow}>
+                            <TouchableOpacity style={styles.menuIconContainer}>
+                                <View style={styles.menuBar} />
+                                <View style={[styles.menuBar, { width: 15 }]} />
+                                <View style={styles.menuBar} />
+                            </TouchableOpacity>
 
-                        <View style={styles.titleWrapper}>
-                            <Text style={styles.appTitle}>AL-NOOR</Text>
-                            <View style={styles.goldLine} />
+                            <View style={styles.titleWrapper}>
+                                <Text style={styles.appTitle}>AL-NOOR</Text>
+                                <View style={styles.goldLine} />
+                            </View>
+
+                            <TouchableOpacity
+                                onPress={() => navigation.navigate('CartTab')}
+                                style={styles.cartBtn}
+                            >
+                                <Text style={styles.cartBtnEmoji}>🛒</Text>
+                                {cartItemCount > 0 && (
+                                    <View style={styles.badge}>
+                                        <Text style={styles.badgeText}>{cartItemCount}</Text>
+                                    </View>
+                                )}
+                            </TouchableOpacity>
                         </View>
 
-                        <TouchableOpacity
-                            onPress={() => navigation.navigate('CartTab')}
-                            style={styles.cartBtn}
-                        >
-                            <Text style={styles.cartBtnEmoji}>🛒</Text>
-                            {cartItemCount > 0 && (
-                                <View style={styles.badge}>
-                                    <Text style={styles.badgeText}>{cartItemCount}</Text>
-                                </View>
-                            )}
-                        </TouchableOpacity>
-                    </View>
+                        <View style={styles.searchContainer}>
+                            <Text style={styles.searchIcon}>🔍</Text>
+                            <TextInput
+                                style={styles.searchInput}
+                                placeholder={t('searchPlaceholder')}
+                                placeholderTextColor="rgba(255,255,255,0.6)"
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                            />
+                        </View>
 
-                    <View style={styles.searchContainer}>
-                        <Text style={styles.searchIcon}>🔍</Text>
-                        <TextInput
-                            style={styles.searchInput}
-                            placeholder={t('searchPlaceholder')}
-                            placeholderTextColor="rgba(255,255,255,0.6)"
-                            value={searchQuery}
-                            onChangeText={setSearchQuery}
+                        <FlatList
+                            data={CATEGORIES}
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            renderItem={renderCategory}
+                            keyExtractor={item => item.id}
+                            contentContainerStyle={styles.categoryList}
                         />
                     </View>
 
-                    <FlatList
-                        data={CATEGORIES}
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        renderItem={renderCategory}
-                        keyExtractor={item => item.id}
-                        contentContainerStyle={styles.categoryList}
-                    />
+                    {/* Content Section */}
+                    <View style={styles.productListContainer}>
+                        <FlatList
+                            ListHeaderComponent={
+                                <View style={styles.sectionHeader}>
+                                    <Text style={styles.sectionTitle}>{t(`categories.${selectedCategory}`)} {t('specials')}</Text>
+                                    <TouchableOpacity>
+                                        <Text style={styles.seeAll}>{t('seeAll')}</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            }
+                            data={filteredProducts}
+                            renderItem={renderProduct}
+                            keyExtractor={item => item.id}
+                            contentContainerStyle={[styles.productList, { paddingBottom: 150 }]}
+                            showsVerticalScrollIndicator={false}
+                            ListEmptyComponent={
+                                <View style={styles.emptySearch}>
+                                    <Text style={styles.emptyEmoji}>😕</Text>
+                                    <Text style={styles.emptyText}>{t('noItemsFound')} for "{searchQuery}"</Text>
+                                </View>
+                            }
+                        />
+                    </View>
                 </View>
-
-                {/* Content Section */}
-                <View style={styles.productListContainer}>
-                    <FlatList
-                        ListHeaderComponent={
-                            <View style={styles.sectionHeader}>
-                                <Text style={styles.sectionTitle}>{t(`categories.${selectedCategory}`)} {t('specials')}</Text>
-                                <TouchableOpacity>
-                                    <Text style={styles.seeAll}>{t('seeAll')}</Text>
-                                </TouchableOpacity>
-                            </View>
-                        }
-                        data={filteredProducts}
-                        renderItem={renderProduct}
-                        keyExtractor={item => item.id}
-                        contentContainerStyle={[styles.productList, { paddingBottom: 150 }]}
-                        showsVerticalScrollIndicator={false}
-                        ListEmptyComponent={
-                            <View style={styles.emptySearch}>
-                                <Text style={styles.emptyEmoji}>😕</Text>
-                                <Text style={styles.emptyText}>{t('noItemsFound')} for "{searchQuery}"</Text>
-                            </View>
-                        }
-                    />
-                </View>
-            </View>
+            </SafeAreaView>
         </SplitScreen>
     );
 };
@@ -231,8 +234,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     header: {
-        height: '40%',
-        paddingTop: 50,
+        height: '33%',
         paddingHorizontal: SIZES.padding,
     },
     topRow: {

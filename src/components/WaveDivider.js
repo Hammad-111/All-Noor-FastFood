@@ -28,9 +28,11 @@ const WaveDivider = () => {
     const waveHeight = 20;
     const waveWidth = width;
 
-    // Path for one wave cycle
+    // Path for one wave cycle (covers exactly waveWidth)
     const singleWave = `q ${waveWidth / 4} ${waveHeight}, ${waveWidth / 2} 0 t ${waveWidth / 2} 0`;
-    const fullPath = `M 0 0 ${singleWave} ${singleWave} v 100 h ${-waveWidth * 2} z`;
+
+    // Use 3 segments to ensure overlap during animation
+    const fullPath = `M 0 0 ${singleWave} ${singleWave} ${singleWave} v 100 h ${-waveWidth * 3} z`;
 
     const translateX = scrollAnim.interpolate({
         inputRange: [0, 1],
@@ -42,10 +44,13 @@ const WaveDivider = () => {
             <Animated.View
                 style={[
                     styles.waveWrapper,
-                    { transform: [{ translateX }] }
+                    {
+                        width: waveWidth * 3,
+                        transform: [{ translateX }]
+                    }
                 ]}
             >
-                <Svg height="100" width={waveWidth * 2} viewBox={`0 -25 ${waveWidth * 2} 100`}>
+                <Svg height="100" width={waveWidth * 3} viewBox={`0 -25 ${waveWidth * 3} 100`}>
                     <Path
                         d={fullPath}
                         fill={COLORS.background}
@@ -58,13 +63,14 @@ const WaveDivider = () => {
                 style={[
                     styles.waveWrapper,
                     {
+                        width: waveWidth * 3,
                         opacity: 0.3,
                         top: 5,
                         transform: [{ translateX }]
                     }
                 ]}
             >
-                <Svg height="100" width={waveWidth * 2} viewBox={`0 -25 ${waveWidth * 2} 100`}>
+                <Svg height="100" width={waveWidth * 3} viewBox={`0 -25 ${waveWidth * 3} 100`}>
                     <Path
                         d={fullPath}
                         fill={COLORS.background}

@@ -7,11 +7,11 @@ import WaveDivider from './WaveDivider';
 
 const { width, height } = Dimensions.get('window');
 
-const SplitScreen = ({ children }) => {
+const SplitScreen = ({ children, ratio = 0.35 }) => {
     return (
         <View style={styles.container}>
-            <View style={styles.topHalf} />
-            <View style={styles.bottomHalf}>
+            <View style={[styles.topHalf, { height: height * ratio }]} />
+            <View style={[styles.bottomHalf, { top: height * ratio }]}>
                 <WaveDivider />
             </View>
 
@@ -31,16 +31,16 @@ const styles = StyleSheet.create({
         top: 0,
         left: 0,
         right: 0,
-        height: height * 0.35,
         backgroundColor: COLORS.primary,
+        zIndex: 0,
     },
     bottomHalf: {
         position: 'absolute',
-        top: height * 0.33,
         left: 0,
         right: 0,
         bottom: 0,
         backgroundColor: COLORS.background,
+        zIndex: 0,
     },
     content: {
         flex: 1,
