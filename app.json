@@ -20,10 +20,16 @@
         "foregroundImage": "./assets/logo.jpeg",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.hammadjaved.alnoorfastfood"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "b0cae1c1-93a2-4a3a-ab81-e2117655416f"
+      }
     }
   }
 }

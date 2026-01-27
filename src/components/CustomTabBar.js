@@ -2,6 +2,7 @@
 import React from 'react';
 
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../constants/theme';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -91,10 +92,12 @@ const TabItem = ({ route, options, isFocused, onPress, getIcon }) => {
 };
 
 const CustomTabBar = ({ state, descriptors, navigation }) => {
+    const insets = useSafeAreaInsets();
+
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 5) }]}>
             {/* Background Mask to hide scrolling content */}
-            <View style={styles.backgroundMask} />
+            <View style={[styles.backgroundMask, { height: 60 + Math.max(insets.bottom, 5) }]} />
 
             <View style={styles.tabBar}>
                 {state.routes.map((route, index) => {
