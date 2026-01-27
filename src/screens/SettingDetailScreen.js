@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../context/CartContext';
+import BackButton from '../components/BackButton';
 
 const SettingDetailScreen = ({ route }) => {
     const navigation = useNavigation();
@@ -54,9 +55,7 @@ const SettingDetailScreen = ({ route }) => {
 
     const renderHeader = () => (
         <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                <Text style={styles.backText}>←</Text>
-            </TouchableOpacity>
+            <BackButton />
             <Text style={styles.headerTitle}>{title}</Text>
             <View style={{ width: 45 }} />
         </View>

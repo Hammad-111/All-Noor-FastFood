@@ -6,6 +6,7 @@ import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useToast } from '../context/ToastContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import BackButton from '../components/BackButton';
 
 const CheckoutScreen = ({ navigation }) => {
     const { cart, removeFromCart, clearCart, updateQuantity, getDefaultAddress } = useCart();
@@ -194,9 +195,7 @@ const CheckoutScreen = ({ navigation }) => {
             <SplitScreen ratio={0.33}>
                 <SafeAreaView style={styles.container} edges={['top']}>
                     <View style={styles.header}>
-                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                            <Text style={styles.backBtnText}>←</Text>
-                        </TouchableOpacity>
+                        <BackButton />
                         <Text style={styles.title}>{t('myCart')}</Text>
                         <View style={{ width: 45 }} />
                     </View>

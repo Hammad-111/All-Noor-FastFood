@@ -7,11 +7,13 @@ import { COLORS, FONTS, SIZES } from '../constants/theme';
 import { getImage } from '../utils/imageMap';
 import { useCart } from '../context/CartContext';
 import { useNavigation } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import BackButton from '../components/BackButton';
 
 const { width } = Dimensions.get('window');
 
 const ProductDetailsScreen = ({ route }) => {
+    const insets = useSafeAreaInsets();
     const { product } = route.params;
     const { addToCart, toggleFavorite, isFavorite } = useCart();
     const navigation = useNavigation();
@@ -51,13 +53,11 @@ const ProductDetailsScreen = ({ route }) => {
     return (
         <View style={styles.mainContainer}>
             <SplitScreen ratio={0.42}>
-                <SafeAreaView style={styles.container} edges={['top']}>
+                <SafeAreaView style={[styles.container, { paddingBottom: Math.max(insets.bottom, 15) }]} edges={['top']}>
                     {/* Top Section: Header & Image */}
                     <View style={styles.imageSection}>
                         <View style={styles.headerRow}>
-                            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
-                                <Text style={styles.iconText}>←</Text>
-                            </TouchableOpacity>
+                            <BackButton color={COLORS.secondary} />
                             <Text style={styles.headerTitle}>Details</Text>
                             <TouchableOpacity
                                 onPress={() => toggleFavorite(product)}
