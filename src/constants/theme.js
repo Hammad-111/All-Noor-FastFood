@@ -1,12 +1,18 @@
 
 export const COLORS = {
-    primary: '#800000', // Maroon
-    secondary: '#FFFFFF', // White
-    accent: '#FFD700', // Gold
+    primary: '#800000', // Shop's Brand Maroon
+    primaryGradient: ['#3A0000', '#600000', '#900000'], // Deep rich maroon matrix
+    secondary: '#FFFFFF', // High contrast white
+    accent: '#FFD700', // Gold accent
+    accentGradient: ['#D4AF37', '#FFD700'],
     text: '#FFFFFF',
-    textDark: '#333333',
-    button: '#800000', // Crimson Maroon
-    background: '#FFFFFF',
+    textDark: '#F8FAFC', // Needs to be light for dark mode cards
+    textLight: '#94A3B8',
+    button: '#800000',
+    background: '#020617', // Very dark slate/navy
+    glass: 'rgba(30, 41, 59, 0.4)', // Dark frosted glass
+    glassBorder: 'rgba(128, 0, 0, 0.4)', // Maroon tinted glass border
+    glassDark: 'rgba(0, 0, 0, 0.7)',
 };
 
 export const SIZES = {

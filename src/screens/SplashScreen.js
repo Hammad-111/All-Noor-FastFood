@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Dimensions, Image, Animated } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Image, Animated, Platform } from 'react-native';
 import { COLORS } from '../constants/theme';
 import { useNavigation } from '@react-navigation/native';
 import { useLanguage } from '../context/LanguageContext';
@@ -17,12 +17,12 @@ const Particle = ({ delay, startPos }) => {
                     toValue: 1,
                     duration: 3000 + Math.random() * 2000,
                     delay: delay,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(moveAnim, {
                     toValue: 0,
                     duration: 0,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 })
             ])
         ).start();
@@ -52,7 +52,6 @@ const Particle = ({ delay, startPos }) => {
 };
 
 const SplashScreen = () => {
-    const navigation = useNavigation();
     const { t } = useLanguage();
     const scaleAnim = useRef(new Animated.Value(0)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -67,18 +66,18 @@ const SplashScreen = () => {
                     toValue: 1,
                     friction: 3,
                     tension: 40,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(opacityAnim, {
                     toValue: 1,
                     duration: 600,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
             ]),
             Animated.timing(textOpacity, {
                 toValue: 1,
                 duration: 600,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             })
         ]).start();
 
@@ -88,25 +87,22 @@ const SplashScreen = () => {
                 Animated.timing(pulseAnim, {
                     toValue: 1.05,
                     duration: 1500,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(pulseAnim, {
                     toValue: 1,
                     duration: 1500,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 })
             ])
         ).start();
 
         const timer = setTimeout(() => {
-            navigation.reset({
-                index: 0,
-                routes: [{ name: 'Main' }],
-            });
+            // Navigation is now handled by App.js to avoid "uninitialized navigation" errors
         }, 4000);
 
         return () => clearTimeout(timer);
-    }, [navigation]);
+    }, []);
 
     return (
         <View style={styles.container}>
@@ -137,6 +133,7 @@ const SplashScreen = () => {
                 <Image
                     source={require('../../assets/logo_extracted.png')}
                     style={styles.logo}
+                    resizeMode="contain"
                 />
 
                 {/* Visual Ring */}
@@ -194,7 +191,6 @@ const styles = StyleSheet.create({
     logo: {
         width: 250,
         height: 150,
-        resizeMode: 'contain',
     },
     logoRing: {
         position: 'absolute',

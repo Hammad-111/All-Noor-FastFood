@@ -2,6 +2,7 @@
 import React from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import { COLORS } from '../constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import WaveDivider from './WaveDivider';
 
@@ -10,7 +11,12 @@ const { width, height } = Dimensions.get('window');
 const SplitScreen = ({ children, ratio = 0.35 }) => {
     return (
         <View style={styles.container}>
-            <View style={[styles.topHalf, { height: height * ratio }]} />
+            <LinearGradient
+                colors={COLORS.primaryGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.topHalf, { height: height * ratio }]}
+            />
             <View style={[styles.bottomHalf, { top: height * ratio }]}>
                 <WaveDivider />
             </View>

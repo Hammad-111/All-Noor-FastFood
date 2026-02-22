@@ -4,6 +4,9 @@ import SplitScreen from '../components/SplitScreen';
 import { COLORS, SIZES } from '../constants/theme';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { db } from '../utils/firebaseConfig';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../context/CartContext';
 import BackButton from '../components/BackButton';
@@ -11,8 +14,37 @@ import BackButton from '../components/BackButton';
 const SettingDetailScreen = ({ route }) => {
     const navigation = useNavigation();
     const { t, language } = useLanguage();
+    const { user } = useAuth();
     const { addresses, addAddress, updateAddress, deleteAddress } = useCart();
     const title = route?.params?.title || "Detail";
+
+    const [orders, setOrders] = useState([]);
+    const [loadingOrders, setLoadingOrders] = useState(true);
+
+    // --- FETCH ORDER HISTORY ---
+    React.useEffect(() => {
+        if (title === t('myOrders') && user) {
+            setLoadingOrders(true);
+            const q = query(
+                collection(db, 'users', user.uid, 'orders'),
+                orderBy('createdAt', 'desc')
+            );
+
+            const unsub = onSnapshot(q, (snap) => {
+                const orderData = snap.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                setOrders(orderData);
+                setLoadingOrders(false);
+            }, (error) => {
+                console.error("Orders Fetch Error:", error);
+                setLoadingOrders(false);
+            });
+
+            return unsub;
+        }
+    }, [user, title, t]);
 
     // Modal State
     const [modalVisible, setModalVisible] = useState(false);
@@ -61,28 +93,52 @@ const SettingDetailScreen = ({ route }) => {
         </View>
     );
 
-    const renderOrders = () => (
-        <ScrollView showsVerticalScrollIndicator={false}>
-            {[1, 2].map((id) => (
-                <View key={id} style={styles.orderCard}>
-                    <View style={styles.orderHeader}>
-                        <Text style={styles.orderNo}>{t('orderNo')} #ALN-{1234 + id}</Text>
-                        <View style={[styles.statusBadge, { backgroundColor: id === 1 ? '#FFF8E1' : '#E8F5E9' }]}>
-                            <Text style={[styles.statusText, { color: id === 1 ? '#FFB300' : '#4CAF50' }]}>
-                                {id === 1 ? t('processing') : t('delivered')}
+    const renderOrders = () => {
+        if (loadingOrders) {
+            return (
+                <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>{language === 'ur' ? 'آرڈرز لوڈ ہو رہے ہیں...' : 'Loading Orders...'}</Text>
+                </View>
+            );
+        }
+
+        if (orders.length === 0) {
+            return (
+                <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>{t('noItemsFound')}</Text>
+                    <Text style={styles.subText}>{language === 'ur' ? 'آپ نے ابھی تک کوئی آرڈر نہیں دیا' : 'You haven\'t placed any orders yet'}</Text>
+                </View>
+            );
+        }
+
+        return (
+            <ScrollView showsVerticalScrollIndicator={false}>
+                {orders.map((order) => (
+                    <View key={order.id} style={styles.orderCard}>
+                        <View style={styles.orderHeader}>
+                            <Text style={styles.orderNo}>{t('orderNo')} #...{order.id.slice(-5).toUpperCase()}</Text>
+                            <View style={[styles.statusBadge, { backgroundColor: order.status === 'Processing' ? '#FFF8E1' : '#E8F5E9' }]}>
+                                <Text style={[styles.statusText, { color: order.status === 'Processing' ? '#FFB300' : '#4CAF50' }]}>
+                                    {order.status === 'Processing' ? t('processing') : t('delivered')}
+                                </Text>
+                            </View>
+                        </View>
+                        <View style={styles.orderDivider} />
+                        <Text style={styles.orderDate}>
+                            {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString() : 'Just now'}
+                        </Text>
+                        <View style={styles.orderFooter}>
+                            <Text style={styles.orderItems} numberOfLines={1}>
+                                {order.items?.map(i => `${i.quantity}x ${i.name}`).join(', ')}
                             </Text>
+                            <Text style={styles.orderTotal}>Rs. {order.total}</Text>
                         </View>
                     </View>
-                    <View style={styles.orderDivider} />
-                    <Text style={styles.orderDate}>27 Jan 2026 • 12:45 PM</Text>
-                    <View style={styles.orderFooter}>
-                        <Text style={styles.orderItems}>2x Zinger Burger, 1x Fries</Text>
-                        <Text style={styles.orderTotal}>Rs. 850</Text>
-                    </View>
-                </View>
-            ))}
-        </ScrollView>
-    );
+                ))}
+                <View style={{ height: 100 }} />
+            </ScrollView>
+        );
+    };
 
     const renderPayments = () => (
         <ScrollView>
@@ -273,59 +329,62 @@ const styles = StyleSheet.create({
     backText: { color: COLORS.secondary, fontSize: 24, fontWeight: 'bold' },
     headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.secondary },
     content: { flex: 1, paddingHorizontal: 20, paddingTop: 45 },
-    orderCard: { backgroundColor: '#FFF', borderRadius: 18, padding: 15, marginBottom: 15, elevation: 3, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10 },
+    orderCard: { backgroundColor: COLORS.glass, borderRadius: 18, padding: 15, marginBottom: 15, elevation: 3, borderWidth: 1, borderColor: COLORS.glassBorder, shadowColor: COLORS.primary, shadowOpacity: 0.1, shadowRadius: 10 },
     orderHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    orderNo: { fontWeight: 'bold', fontSize: 16, color: COLORS.textDark },
+    orderNo: { fontWeight: 'bold', fontSize: 16, color: COLORS.secondary },
     statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
     statusText: { fontSize: 12, fontWeight: 'bold' },
-    orderDivider: { height: 1, backgroundColor: '#F0F0F0', marginVertical: 12 },
-    orderDate: { fontSize: 12, color: '#AAA', marginBottom: 8 },
+    orderDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.1)', marginVertical: 12 },
+    orderDate: { fontSize: 12, color: COLORS.textLight, marginBottom: 8 },
     orderFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    orderItems: { fontSize: 13, color: '#666', flex: 1 },
-    orderTotal: { fontWeight: 'bold', color: COLORS.primary, fontSize: 15 },
-    paymentCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', padding: 15, borderRadius: 18, marginBottom: 12, borderWidth: 1, borderColor: '#F0F0F0' },
-    paymentIconBox: { width: 45, height: 45, borderRadius: 12, backgroundColor: '#F5F5F5', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+    orderItems: { fontSize: 13, color: COLORS.textLight, flex: 1 },
+    orderTotal: { fontWeight: 'bold', color: COLORS.accent, fontSize: 15 },
+    paymentCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.glass, padding: 15, borderRadius: 18, marginBottom: 12, borderWidth: 1, borderColor: COLORS.glassBorder },
+    paymentIconBox: { width: 45, height: 45, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
     paymentIcon: { fontSize: 22 },
     paymentInfo: { flex: 1 },
-    paymentTitle: { fontWeight: 'bold', color: COLORS.textDark, fontSize: 15 },
-    paymentSub: { fontSize: 12, color: '#888', marginTop: 2 },
-    checkCircleActive: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: COLORS.primary, justifyContent: 'center', alignItems: 'center' },
-    checkDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.primary },
-    addressCard: { backgroundColor: '#FFF', padding: 15, borderRadius: 18, flexDirection: 'row', alignItems: 'center', marginBottom: 15, elevation: 2 },
-    addressIconBox: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F0F0F0', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+    paymentTitle: { fontWeight: 'bold', color: COLORS.secondary, fontSize: 15 },
+    paymentSub: { fontSize: 12, color: COLORS.textLight, marginTop: 2 },
+    checkCircleActive: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: COLORS.accent, justifyContent: 'center', alignItems: 'center' },
+    checkDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.accent },
+    addressCard: { backgroundColor: COLORS.glass, padding: 15, borderRadius: 18, flexDirection: 'row', alignItems: 'center', marginBottom: 15, elevation: 2, borderWidth: 1, borderColor: COLORS.glassBorder },
+    addressIconBox: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
     addressIcon: { fontSize: 18 },
     addressInfo: { flex: 1 },
-    addressTitle: { fontWeight: 'bold', color: COLORS.textDark, fontSize: 15 },
-    addressText: { fontSize: 13, color: '#888', marginTop: 4 },
+    addressTitle: { fontWeight: 'bold', color: COLORS.secondary, fontSize: 15 },
+    addressText: { fontSize: 13, color: COLORS.textLight, marginTop: 4 },
     addressActions: { alignItems: 'flex-end' },
-    defaultBadge: { backgroundColor: COLORS.primary + '10', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 8 },
-    defaultText: { fontSize: 9, color: COLORS.primary, fontWeight: 'bold' },
-    editLink: { color: COLORS.primary, fontWeight: 'bold', fontSize: 13 },
+    defaultBadge: { backgroundColor: COLORS.accent + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 8 },
+    defaultText: { fontSize: 9, color: COLORS.accent, fontWeight: 'bold' },
+    editLink: { color: COLORS.accent, fontWeight: 'bold', fontSize: 13 },
     deleteLink: { color: '#FF5252', fontWeight: 'bold', fontSize: 12 },
-    addBtn: { borderWidth: 2, borderColor: COLORS.primary, borderStyle: 'dashed', padding: 15, borderRadius: 18, alignItems: 'center', marginTop: 10, marginBottom: 50 },
-    addBtnText: { color: COLORS.primary, fontWeight: 'bold' },
-    supportCard: { backgroundColor: '#FFF', flexDirection: 'row', alignItems: 'center', padding: 20, borderRadius: 20, marginBottom: 12, elevation: 2 },
+    addBtn: { borderWidth: 2, borderColor: COLORS.accent, borderStyle: 'dashed', padding: 15, borderRadius: 18, alignItems: 'center', marginTop: 10, marginBottom: 50 },
+    addBtnText: { color: COLORS.accent, fontWeight: 'bold' },
+    supportCard: { backgroundColor: COLORS.glass, flexDirection: 'row', alignItems: 'center', padding: 20, borderRadius: 20, marginBottom: 12, elevation: 2, borderWidth: 1, borderColor: COLORS.glassBorder },
     supportEmoji: { fontSize: 24, marginRight: 15 },
-    supportTitle: { flex: 1, fontWeight: 'bold', color: COLORS.textDark, fontSize: 16 },
-    supportArrow: { fontSize: 24, color: '#CCC' },
+    supportTitle: { flex: 1, fontWeight: 'bold', color: COLORS.secondary, fontSize: 16 },
+    supportArrow: { fontSize: 24, color: 'rgba(255,255,255,0.2)' },
     emptyContainer: { alignItems: 'center', marginTop: 50 },
-    emptyText: { fontSize: 18, fontWeight: 'bold', color: COLORS.textDark },
-    subText: { color: '#888', marginTop: 10, textAlign: 'center' },
+    emptyText: { fontSize: 18, fontWeight: 'bold', color: COLORS.secondary },
+    subText: { color: COLORS.textLight, marginTop: 10, textAlign: 'center' },
     // Modal Styles
-    modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-    modalContainer: { backgroundColor: '#FFF', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, paddingBottom: 40 },
-    modalTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.textDark, marginBottom: 20 },
-    modalInput: { backgroundColor: '#F5F5F5', borderRadius: 15, padding: 15, marginBottom: 15, fontSize: 14, color: COLORS.textDark },
+    // Modal Styles
+    modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
+    modalContainer: { backgroundColor: '#0F172A', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, paddingBottom: 40 },
+    modalTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.secondary, marginBottom: 20 },
+    modalInput: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 15, padding: 15, marginBottom: 15, fontSize: 14, color: COLORS.secondary, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
     switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, marginBottom: 20 },
-    switchLabel: { fontSize: 15, fontWeight: '600', color: COLORS.textDark },
+    switchLabel: { fontSize: 15, fontWeight: '600', color: COLORS.secondary },
     modalFooter: { flexDirection: 'row', gap: 10 },
-    cancelBtn: { flex: 1, padding: 15, borderRadius: 15, alignItems: 'center', backgroundColor: '#F5F5F5' },
-    cancelBtnText: { fontWeight: 'bold', color: '#666' },
+    cancelBtn: { flex: 1, padding: 15, borderRadius: 15, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+    cancelBtnText: { fontWeight: 'bold', color: COLORS.textLight },
     saveBtn: { flex: 2, padding: 15, borderRadius: 15, alignItems: 'center', backgroundColor: COLORS.primary },
     saveBtnText: { fontWeight: 'bold', color: '#FFF' },
     // Legal & Settings
     legalSection: {
-        backgroundColor: '#FFF',
+        backgroundColor: COLORS.glass,
+        borderWidth: 1,
+        borderColor: COLORS.glassBorder,
         borderRadius: 20,
         padding: 20,
         marginBottom: 15,
@@ -333,11 +392,11 @@ const styles = StyleSheet.create({
     },
     legalHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
     legalIcon: { fontSize: 20, marginRight: 10 },
-    legalTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.textDark },
-    legalText: { fontSize: 13, color: '#666', lineHeight: 20 },
+    legalTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.secondary },
+    legalText: { fontSize: 13, color: COLORS.textLight, lineHeight: 20 },
     versionBox: { alignItems: 'center', marginTop: 10, paddingBottom: 20 },
-    versionText: { fontSize: 12, color: '#AAA', fontWeight: '600' },
-    creditText: { fontSize: 10, color: '#CCC', marginTop: 4 }
+    versionText: { fontSize: 12, color: COLORS.textLight, fontWeight: '600' },
+    creditText: { fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 4 }
 });
 
 export default SettingDetailScreen;

@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { TouchableOpacity, StyleSheet, Animated, Platform } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { COLORS } from '../constants/theme';
 import { useNavigation } from '@react-navigation/native';
@@ -11,7 +11,7 @@ const BackButton = ({ color = COLORS.secondary, style }) => {
     const handlePressIn = () => {
         Animated.spring(scale, {
             toValue: 0.9,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
         }).start();
     };
 
@@ -20,7 +20,7 @@ const BackButton = ({ color = COLORS.secondary, style }) => {
             toValue: 1,
             friction: 4,
             tension: 40,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
         }).start();
     };
 

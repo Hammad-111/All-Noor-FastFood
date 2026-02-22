@@ -1,17 +1,48 @@
-
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useToast } from './ToastContext';
+import { useAuth } from './AuthContext';
+import { db } from '../utils/firebaseConfig';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 
 const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
+    const { user } = useAuth();
     const [cart, setCart] = useState([]);
     const [favorites, setFavorites] = useState([]);
-    const [addresses, setAddresses] = useState([
-        { id: '1', title: 'Home', address: 'House #123, Street 5, Block C, Multan', isDefault: true }
-    ]);
+    const [addresses, setAddresses] = useState([]);
 
     const { showToast } = useToast();
+
+    // --- FIRESTORE SYNC: ADDRESSES ---
+    useEffect(() => {
+        if (!user) {
+            setAddresses([]);
+            return;
+        }
+
+        const unsub = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                if (data.addresses) {
+                    setAddresses(data.addresses);
+                }
+            }
+        });
+
+        return unsub;
+    }, [user]);
+
+    const syncAddressesToFirestore = async (newAddresses) => {
+        if (user) {
+            try {
+                await setDoc(doc(db, 'users', user.uid), { addresses: newAddresses }, { merge: true });
+            } catch (error) {
+                console.error("Firestore Sync Error:", error);
+                showToast("Failed to sync with cloud", "error");
+            }
+        }
+    };
 
     const addToCart = (product) => {
         setCart((prevCart) => {
@@ -65,33 +96,41 @@ export const CartProvider = ({ children }) => {
     };
 
     const addAddress = (newAddr) => {
-        setAddresses(prev => {
-            const addr = { ...newAddr, id: Date.now().toString() };
-            if (addr.isDefault) {
-                return [...prev.map(a => ({ ...a, isDefault: false })), addr];
-            }
-            return [...prev, addr];
-        });
+        const addrId = Date.now().toString();
+        const addr = { ...newAddr, id: addrId };
+
+        let updated;
+        if (addr.isDefault) {
+            updated = [...addresses.map(a => ({ ...a, isDefault: false })), addr];
+        } else {
+            updated = [...addresses, addr];
+        }
+
+        setAddresses(updated);
+        syncAddressesToFirestore(updated);
         showToast('Address added successfully');
     };
 
     const updateAddress = (updatedAddr) => {
-        setAddresses(prev => {
-            return prev.map(a => {
-                if (a.id === updatedAddr.id) {
-                    return updatedAddr;
-                }
-                if (updatedAddr.isDefault) {
-                    return { ...a, isDefault: false };
-                }
-                return a;
-            });
+        const updated = addresses.map(a => {
+            if (a.id === updatedAddr.id) {
+                return updatedAddr;
+            }
+            if (updatedAddr.isDefault) {
+                return { ...a, isDefault: false };
+            }
+            return a;
         });
+
+        setAddresses(updated);
+        syncAddressesToFirestore(updated);
         showToast('Address updated');
     };
 
     const deleteAddress = (id) => {
-        setAddresses(prev => prev.filter(a => a.id !== id));
+        const updated = addresses.filter(a => a.id !== id);
+        setAddresses(updated);
+        syncAddressesToFirestore(updated);
         showToast('Address deleted', 'info');
     };
 

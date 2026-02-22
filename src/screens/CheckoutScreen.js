@@ -5,14 +5,19 @@ import { COLORS, FONTS, SIZES } from '../constants/theme';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
+import { db } from '../utils/firebaseConfig';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
 
 const CheckoutScreen = ({ navigation }) => {
     const { cart, removeFromCart, clearCart, updateQuantity, getDefaultAddress } = useCart();
-    const { t } = useLanguage();
+    const { user } = useAuth();
+    const { t, language } = useLanguage();
     const { showToast } = useToast();
     const [address, setAddress] = useState('');
+    const [loading, setLoading] = useState(false);
 
     React.useEffect(() => {
         const defaultAddr = getDefaultAddress();
@@ -42,7 +47,7 @@ const CheckoutScreen = ({ navigation }) => {
         }).start();
     };
 
-    const handlePlaceOrder = () => {
+    const handlePlaceOrder = async () => {
         if (cart.length === 0) {
             showToast("Your cart is empty!", 'error');
             return;
@@ -52,35 +57,63 @@ const CheckoutScreen = ({ navigation }) => {
             return;
         }
 
-        let message = `🧾 *AL NOOR FAST FOOD - RECEIPT* 🧾\n`;
-        message += `--------------------------------\n`;
-        message += `📅 *Date:* ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}\n`;
-        message += `📍 *Delivery Address:*\n${address}\n`;
-        message += `--------------------------------\n\n`;
+        try {
+            setLoading(true); // Using handleDevBypass style or common loading
 
-        message += `🍽️ *ORDER ITEMS:*\n`;
-        cart.forEach(item => {
-            const itemTotal = item.price * item.quantity;
-            message += `▪️ ${item.quantity}x ${item.name} \n   └ Rs. ${item.price} x ${item.quantity} = Rs. ${itemTotal}\n`;
-        });
+            // 1. Prepare WhatsApp Message
+            let message = `🧾 *AL NOOR FAST FOOD - RECEIPT* 🧾\n`;
+            message += `--------------------------------\n`;
+            message += `📅 *Date:* ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}\n`;
+            message += `📍 *Delivery Address:*\n${address}\n`;
+            message += `--------------------------------\n\n`;
 
-        message += `\n--------------------------------\n`;
-        message += `💵 *Subtotal:* Rs. ${subtotal}\n`;
-        message += `🛵 *Delivery:* Rs. ${deliveryFee}\n`;
-        message += `--------------------------------\n`;
-        message += `💰 *TOTAL AMOUNT: Rs. ${total}*\n`;
-        message += `--------------------------------\n`;
-        message += `\n🚀 _Please confirm my order!_`;
+            message += `🍽️ *ORDER ITEMS:*\n`;
+            cart.forEach(item => {
+                const itemTotal = item.price * item.quantity;
+                message += `▪️ ${item.quantity}x ${item.name} \n   └ Rs. ${item.price} x ${item.quantity} = Rs. ${itemTotal}\n`;
+            });
 
-        const phoneNumber = "923017891391";
-        const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+            message += `\n--------------------------------\n`;
+            message += `💵 *Subtotal:* Rs. ${subtotal}\n`;
+            message += `🛵 *Delivery:* Rs. ${deliveryFee}\n`;
+            message += `--------------------------------\n`;
+            message += `💰 *TOTAL AMOUNT: Rs. ${total}*\n`;
+            message += `--------------------------------\n`;
+            message += `\n🚀 _Please confirm my order!_`;
 
-        Linking.openURL(url).then(() => {
-            clearCart();
-            navigation.navigate('HomeTab');
-        }).catch(() => {
-            Alert.alert("Error", "Could not open WhatsApp.");
-        });
+            const phoneNumber = "923017891391";
+            const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+
+            // 2. SAVE TO FIRESTORE FIRST
+            if (user) {
+                await addDoc(collection(db, 'users', user.uid, 'orders'), {
+                    items: cart,
+                    total: total,
+                    subtotal: subtotal,
+                    deliveryFee: deliveryFee,
+                    address: address,
+                    createdAt: serverTimestamp(),
+                    status: 'Processing',
+                    userEmail: user.email || ''
+                });
+            }
+
+            // 3. Open WhatsApp and Clear Cart
+            const canOpen = await Linking.canOpenURL(url);
+            if (canOpen) {
+                await Linking.openURL(url);
+                showToast("Order saved! Redirecting to WhatsApp...", "success");
+                clearCart();
+                navigation.navigate('HomeTab');
+            } else {
+                Alert.alert("Error", "Could not open WhatsApp. Please check if it's installed.");
+            }
+        } catch (error) {
+            console.error("Order Error:", error);
+            showToast("Failed to place order. Try again.", "error");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const renderItem = ({ item }) => (
@@ -177,11 +210,14 @@ const CheckoutScreen = ({ navigation }) => {
                     onPressIn={handlePressIn}
                     onPressOut={handlePressOut}
                     onPress={handlePlaceOrder}
-                    style={styles.orderBtn}
+                    style={[styles.orderBtn, loading && styles.btnDisabled]}
+                    disabled={loading}
                 >
                     <View style={styles.btnContent}>
-                        <Text style={styles.orderBtnEmoji}>💬</Text>
-                        <Text style={styles.orderBtnText}>{t('orderWhatsapp')}</Text>
+                        <Text style={styles.orderBtnEmoji}>{loading ? '⏳' : '💬'}</Text>
+                        <Text style={styles.orderBtnText}>
+                            {loading ? (language === 'ur' ? 'آرڈر ہو رہا ہے...' : 'Placing Order...') : t('orderWhatsapp')}
+                        </Text>
                     </View>
                     <View style={styles.btnShine} />
                 </TouchableOpacity>
@@ -322,7 +358,7 @@ const styles = StyleSheet.create({
         paddingBottom: 20,
     },
     footerSection: {
-        backgroundColor: '#FFF',
+        backgroundColor: 'transparent',
         paddingTop: 10,
         paddingHorizontal: 20,
     },
@@ -330,13 +366,15 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: '#FFF',
+        backgroundColor: COLORS.glass,
+        borderWidth: 1,
+        borderColor: COLORS.glassBorder,
         borderRadius: 15,
         padding: 12,
         marginBottom: 10,
         marginHorizontal: 20,
-        shadowColor: "#000",
-        shadowOpacity: 0.05,
+        shadowColor: COLORS.primary,
+        shadowOpacity: 0.1,
         shadowRadius: 10,
         elevation: 3,
     },
@@ -346,7 +384,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     qtyBox: {
-        backgroundColor: '#F5F5F5',
+        backgroundColor: 'rgba(255,255,255,0.1)',
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 8,
@@ -354,7 +392,7 @@ const styles = StyleSheet.create({
     },
     qtyText: {
         fontWeight: 'bold',
-        color: COLORS.primary,
+        color: COLORS.accent,
     },
     itemInfo: { flex: 1 },
     itemName: {
@@ -364,7 +402,7 @@ const styles = StyleSheet.create({
     },
     itemPrice: {
         fontSize: 13,
-        color: COLORS.primary,
+        color: COLORS.accent,
         fontWeight: '600',
     },
     actions: {
@@ -375,7 +413,7 @@ const styles = StyleSheet.create({
         width: 30,
         height: 30,
         borderRadius: 15,
-        backgroundColor: '#F0F0F0',
+        backgroundColor: 'rgba(255,255,255,0.1)',
         justifyContent: 'center',
         alignItems: 'center',
         marginHorizontal: 4,
@@ -383,7 +421,7 @@ const styles = StyleSheet.create({
     qtyBtnText: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: COLORS.textDark,
+        color: COLORS.secondary,
     },
     removeBtn: { marginLeft: 8 },
     sectionHeader: {
@@ -399,11 +437,11 @@ const styles = StyleSheet.create({
     paymentMethodCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FDFDFD',
+        backgroundColor: COLORS.glass,
         borderRadius: 18,
         padding: 15,
         borderWidth: 1,
-        borderColor: COLORS.primary + '20',
+        borderColor: COLORS.glassBorder,
     },
     paymentIcon: {
         fontSize: 24,
@@ -417,7 +455,7 @@ const styles = StyleSheet.create({
     },
     paymentSub: {
         fontSize: 12,
-        color: '#888',
+        color: COLORS.textLight,
         marginTop: 2,
     },
     checkCircle: {
@@ -425,7 +463,7 @@ const styles = StyleSheet.create({
         height: 22,
         borderRadius: 11,
         borderWidth: 2,
-        borderColor: COLORS.primary,
+        borderColor: COLORS.accent,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -433,7 +471,7 @@ const styles = StyleSheet.create({
         width: 10,
         height: 10,
         borderRadius: 5,
-        backgroundColor: COLORS.primary,
+        backgroundColor: COLORS.accent,
     },
     label: {
         fontSize: 16,
@@ -441,21 +479,23 @@ const styles = StyleSheet.create({
         color: COLORS.textDark,
     },
     input: {
-        backgroundColor: '#F8F8F8',
+        backgroundColor: COLORS.glass,
         borderRadius: 12,
         padding: 12,
         minHeight: 60,
         textAlignVertical: 'top',
         fontSize: 14,
-        color: COLORS.textDark,
+        color: COLORS.secondary,
         borderWidth: 1,
-        borderColor: '#EEE',
+        borderColor: COLORS.glassBorder,
     },
     billBox: {
-        backgroundColor: '#F9F9F9',
+        backgroundColor: COLORS.glass,
         borderRadius: 15,
         padding: 15,
         marginBottom: 20,
+        borderWidth: 1,
+        borderColor: COLORS.glassBorder,
     },
     billRow: {
         flexDirection: 'row',
@@ -463,28 +503,28 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     billLabel: {
-        color: '#888',
+        color: COLORS.textLight,
         fontSize: 14,
     },
     billValue: {
         fontWeight: '600',
-        color: COLORS.textDark,
+        color: COLORS.secondary,
     },
     totalRow: {
         marginTop: 8,
         paddingTop: 8,
         borderTopWidth: 1,
-        borderTopColor: '#EEE',
+        borderTopColor: 'rgba(255,255,255,0.1)',
     },
     totalBillLabel: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: COLORS.textDark,
+        color: COLORS.secondary,
     },
     totalBillValue: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: COLORS.primary,
+        color: COLORS.accent,
     },
     orderBtn: {
         backgroundColor: '#128C7E', // Premium WhatsApp Teal
@@ -499,6 +539,7 @@ const styles = StyleSheet.create({
         shadowRadius: 12,
         overflow: 'hidden',
     },
+    btnDisabled: { opacity: 0.7 },
     btnContent: {
         flexDirection: 'row',
         alignItems: 'center',

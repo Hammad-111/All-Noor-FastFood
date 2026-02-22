@@ -1,7 +1,7 @@
 
 import React from 'react';
 
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../constants/theme';
 import { useLanguage } from '../context/LanguageContext';
@@ -18,18 +18,18 @@ const TabItem = ({ route, options, isFocused, onPress, getIcon }) => {
         Animated.parallel([
             Animated.spring(scaleAnim, {
                 toValue: isFocused ? 1.15 : 1,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
                 friction: 5,
             }),
             Animated.spring(translateAnim, {
                 toValue: isFocused ? -5 : 0,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
                 friction: 5,
             }),
             Animated.timing(opacityAnim, {
                 toValue: isFocused ? 1 : 0.6,
                 duration: 200,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             }),
             Animated.timing(dotWidthAnim, {
                 toValue: isFocused ? 15 : 0,

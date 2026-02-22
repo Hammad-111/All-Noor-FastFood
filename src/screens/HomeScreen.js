@@ -1,19 +1,25 @@
 
 import React, { useState, useMemo } from 'react';
 
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Dimensions, TextInput, Animated } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Dimensions, TextInput, Animated, Modal, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import SplitScreen from '../components/SplitScreen';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import { getImage } from '../utils/imageMap';
 import { useNavigation } from '@react-navigation/native';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import { db } from '../utils/firebaseConfig';
+import { doc, onSnapshot, setDoc, collection, addDoc, deleteDoc } from 'firebase/firestore';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ProductCard from '../components/ProductCard';
 
 const { width } = Dimensions.get('window');
 
 const CATEGORIES = [
+    { id: '0', name: 'Deals', icon: '🔥' },
     { id: '1', name: 'Burgers', icon: '🍔' },
     { id: '2', name: 'Pizza', icon: '🍕' },
     { id: '3', name: 'Karahi', icon: '🥘' },
@@ -105,45 +111,267 @@ const HomeScreen = () => {
     const navigation = useNavigation();
     const { addToCart, cart } = useCart();
     const { t } = useLanguage();
-    const [selectedCategory, setSelectedCategory] = useState('Burgers');
+    const { isAdmin } = useAuth();
+    const [selectedCategory, setSelectedCategory] = useState('Deals'); // Default to Deals
     const [searchQuery, setSearchQuery] = useState('');
+    const [prices, setPrices] = useState({});
+    const [dbProducts, setDbProducts] = useState([]);
+    const [deals, setDeals] = useState([]);
+    const [dealCategoryName, setDealCategoryName] = useState('Deals');
+    const [editingProduct, setEditingProduct] = useState(null);
+    const [newPrice, setNewPrice] = useState('');
+    const [savingPrice, setSavingPrice] = useState(false);
+
+    // Add Deal States
+    const [addingDeal, setAddingDeal] = useState(false);
+    const [newDeal, setNewDeal] = useState({ name: '', description: '', price: '' });
+    const [savingDeal, setSavingDeal] = useState(false);
+
+    // Rename Category States
+    const [renamingCategory, setRenamingCategory] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState('');
+    const [savingCategory, setSavingCategory] = useState(false);
+
+    React.useEffect(() => {
+        const pricesRef = doc(db, 'settings', 'prices');
+        const unsubscribePrices = onSnapshot(pricesRef, (docSnap) => {
+            if (docSnap.exists()) {
+                setPrices(docSnap.data());
+            }
+        });
+
+        const configRef = doc(db, 'settings', 'store_config');
+        const unsubscribeConfig = onSnapshot(configRef, (docSnap) => {
+            if (docSnap.exists() && docSnap.data().dealCategoryName) {
+                setDealCategoryName(docSnap.data().dealCategoryName);
+            } else {
+                setDealCategoryName('Deals');
+            }
+        });
+
+        const productsRef = collection(db, 'products');
+        const unsubscribeProducts = onSnapshot(productsRef, (snapshot) => {
+            const fetchedProducts = snapshot.docs.map(doc => ({
+                ...doc.data(),
+                id: doc.id // overwrite id if it exists, or provide it
+            }));
+            // If empty, we can fallback to old PRODUCTS temporarily so the screen doesn't break
+            // before the admin clicks Seed Database.
+            if (fetchedProducts.length > 0) {
+                setDbProducts(fetchedProducts);
+            } else {
+                setDbProducts(PRODUCTS);
+            }
+        });
+
+        const dealsRef = collection(db, 'special_deals');
+        const unsubscribeDeals = onSnapshot(dealsRef, (snapshot) => {
+            const fetchedDeals = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                isSpecialDeal: true, // Mark as special deal
+                category: 'Deals', // Assign to 'Deals' category
+                imageKey: 'deal_01' // Default image for deals
+            }));
+            setDeals(fetchedDeals);
+        });
+
+        return () => {
+            unsubscribePrices();
+            unsubscribeDeals();
+            unsubscribeConfig();
+            unsubscribeProducts();
+        };
+    }, []);
+
+    const handleSeedDatabase = async () => {
+        Alert.alert(
+            "Seed Database",
+            "This will upload all local products to Firebase. Continue?",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Upload", onPress: async () => {
+                        try {
+                            for (let prod of PRODUCTS) {
+                                // Uploading using the specified ID so images map correctly
+                                await setDoc(doc(db, 'products', prod.id), prod);
+                            }
+                            Alert.alert("Success", "All products uploaded to database!");
+                        } catch (error) {
+                            console.error("Seed error", error);
+                            Alert.alert("Error", "Could not seed database.");
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const finalProducts = useMemo(() => {
+        return dbProducts.map(p => ({
+            ...p,
+            price: prices[p.id] !== undefined ? prices[p.id] : p.price
+        }));
+    }, [prices]);
 
     const filteredProducts = useMemo(() => {
-        return PRODUCTS.filter(p =>
+        const allProducts = [...finalProducts, ...deals];
+        return allProducts.filter(p =>
             p.category === selectedCategory &&
             p.name.toLowerCase().includes(searchQuery.toLowerCase())
         );
-    }, [selectedCategory, searchQuery]);
+    }, [selectedCategory, searchQuery, finalProducts, deals]);
+
+    const handleEditPrice = (product) => {
+        setEditingProduct(product);
+        setNewPrice(product.price.toString());
+    };
+
+    const handleSavePrice = async () => {
+        if (!editingProduct || !newPrice) return;
+        const priceNum = Number(newPrice);
+        if (isNaN(priceNum) || priceNum < 0) {
+            Alert.alert("Invalid Price", "Please enter a valid positive number.");
+            return;
+        }
+
+        setSavingPrice(true);
+        try {
+            const pricesRef = doc(db, 'settings', 'prices');
+            await setDoc(pricesRef, {
+                [editingProduct.id]: priceNum
+            }, { merge: true });
+            setEditingProduct(null);
+            setNewPrice('');
+        } catch (error) {
+            console.error("Error saving price:", error);
+            Alert.alert("Error", "Could not save the price.");
+        } finally {
+            setSavingPrice(false);
+        }
+    };
+
+    const handleSaveNewDeal = async () => {
+        if (!newDeal.name || !newDeal.price || !newDeal.description) {
+            Alert.alert("Missing Fields", "Please fill out all fields for the deal.");
+            return;
+        }
+
+        const priceNum = Number(newDeal.price);
+        if (isNaN(priceNum) || priceNum <= 0) {
+            Alert.alert("Invalid Price", "Please enter a valid positive number for the deal.");
+            return;
+        }
+
+        setSavingDeal(true);
+        try {
+            await addDoc(collection(db, 'special_deals'), {
+                name: newDeal.name,
+                description: newDeal.description,
+                price: priceNum,
+                createdAt: new Date().toISOString()
+            });
+            setAddingDeal(false);
+            setNewDeal({ name: '', description: '', price: '' });
+        } catch (error) {
+            console.error("Error adding deal:", error);
+            Alert.alert("Error", "Could not save the special deal.");
+        } finally {
+            setSavingDeal(false);
+        }
+    };
+
+    const handleDeleteDeal = async (dealId) => {
+        Alert.alert(
+            "Delete Deal",
+            "Are you sure you want to delete this special deal?",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            await deleteDoc(doc(db, 'special_deals', dealId));
+                        } catch (error) {
+                            console.error("Error deleting deal:", error);
+                            Alert.alert("Error", "Could not delete the deal.");
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleSaveCategoryName = async () => {
+        if (!newCategoryName.trim()) {
+            Alert.alert("Invalid Name", "Category name cannot be empty.");
+            return;
+        }
+
+        setSavingCategory(true);
+        try {
+            const configRef = doc(db, 'settings', 'store_config');
+            await setDoc(configRef, {
+                dealCategoryName: newCategoryName.trim()
+            }, { merge: true });
+            setRenamingCategory(false);
+        } catch (error) {
+            console.error("Error renaming category:", error);
+            Alert.alert("Error", "Could not rename category.");
+        } finally {
+            setSavingCategory(false);
+        }
+    };
 
     const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
     const renderCategory = ({ item, index }) => {
-        // Simple fade in for categories
+        const categoryDisplayName = item.id === '0' ? dealCategoryName : t(`categories.${item.name}`);
+        const isSelected = selectedCategory === item.name;
+
         return (
-            <TouchableOpacity
-                style={[
-                    styles.categoryItem,
-                    selectedCategory === item.name && styles.categoryItemSelected
-                ]}
-                onPress={() => setSelectedCategory(item.name)}
-            >
-                <Text style={styles.categoryIcon}>{item.icon}</Text>
-                <Text style={[
-                    styles.categoryText,
-                    selectedCategory === item.name && styles.categoryTextSelected
-                ]}>{t(`categories.${item.name}`)}</Text>
+            <TouchableOpacity onPress={() => setSelectedCategory(item.name)} activeOpacity={0.8}>
+                {isSelected ? (
+                    <LinearGradient
+                        colors={COLORS.primaryGradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.categoryItemSelected}
+                    >
+                        <Text style={styles.categoryIcon}>{item.icon}</Text>
+                        <Text style={styles.categoryTextSelected}>
+                            {categoryDisplayName}
+                        </Text>
+                    </LinearGradient>
+                ) : (
+                    <BlurView intensity={70} tint="dark" style={styles.categoryItem}>
+                        <Text style={styles.categoryIcon}>{item.icon}</Text>
+                        <Text style={styles.categoryText}>{categoryDisplayName}</Text>
+                    </BlurView>
+                )}
             </TouchableOpacity>
         );
     };
 
     const renderProduct = ({ item, index }) => {
         return (
-            <ProductCard
-                item={item}
-                index={index}
-                navigation={navigation}
-                addToCart={addToCart}
-            />
+            <View style={{ position: 'relative' }}>
+                {isAdmin && item.isSpecialDeal && (
+                    <TouchableOpacity onPress={() => handleDeleteDeal(item.id)} style={{ position: 'absolute', top: 10, right: 10, zIndex: 10 }}>
+                        <Text style={{ fontSize: 20 }}>🗑️</Text>
+                    </TouchableOpacity>
+                )}
+                <ProductCard
+                    item={item}
+                    index={index}
+                    navigation={navigation}
+                    addToCart={addToCart}
+                    isAdmin={isAdmin && !item.isSpecialDeal}
+                    onEditPrice={handleEditPrice}
+                />
+            </View>
         );
     };
 
@@ -181,6 +409,15 @@ const HomeScreen = () => {
                             </TouchableOpacity>
                         </View>
 
+                        {isAdmin && (
+                            <TouchableOpacity
+                                style={{ backgroundColor: 'red', padding: 5, borderRadius: 5, marginTop: 5, alignSelf: 'flex-end' }}
+                                onPress={handleSeedDatabase}
+                            >
+                                <Text style={{ color: 'white', fontSize: 10 }}>[Admin] Seed DB</Text>
+                            </TouchableOpacity>
+                        )}
+
                         <View style={styles.searchContainer}>
                             <Text style={styles.searchIcon}>🔍</Text>
                             <TextInput
@@ -207,10 +444,30 @@ const HomeScreen = () => {
                         <FlatList
                             ListHeaderComponent={
                                 <View style={styles.sectionHeader}>
-                                    <Text style={styles.sectionTitle}>{t(`categories.${selectedCategory}`)} {t('specials')}</Text>
-                                    <TouchableOpacity>
-                                        <Text style={styles.seeAll}>{t('seeAll')}</Text>
-                                    </TouchableOpacity>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
+                                        <Text style={styles.sectionTitle}>
+                                            {selectedCategory === 'Deals' ? dealCategoryName : t(`categories.${selectedCategory}`)} {t('specials')}
+                                        </Text>
+                                        {isAdmin && selectedCategory === 'Deals' && (
+                                            <View style={{ flexDirection: 'row' }}>
+                                                <TouchableOpacity
+                                                    style={[styles.addDealBtn, { backgroundColor: 'rgba(0,0,0,0.05)', marginRight: 10 }]}
+                                                    onPress={() => {
+                                                        setNewCategoryName(dealCategoryName);
+                                                        setRenamingCategory(true);
+                                                    }}
+                                                >
+                                                    <Text style={[styles.addDealBtnText, { color: COLORS.primary }]}>✏️</Text>
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    style={styles.addDealBtn}
+                                                    onPress={() => setAddingDeal(true)}
+                                                >
+                                                    <Text style={styles.addDealBtnText}>+ Add Deal</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        )}
+                                    </View>
                                 </View>
                             }
                             data={filteredProducts}
@@ -227,6 +484,185 @@ const HomeScreen = () => {
                         />
                     </View>
                 </View>
+
+                {/* Admin Price Edit Modal */}
+                <Modal
+                    visible={!!editingProduct}
+                    transparent={true}
+                    animationType="fade"
+                    onRequestClose={() => setEditingProduct(null)}
+                >
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                        style={styles.modalOverlay}
+                    >
+                        <View style={styles.modalContent}>
+                            <Text style={styles.modalTitle}>Edit Price</Text>
+                            {editingProduct && (
+                                <Text style={styles.modalSubtitle}>{editingProduct.name}</Text>
+                            )}
+
+                            <View style={styles.priceInputContainer}>
+                                <Text style={styles.currencyPrefix}>{t('rs')}</Text>
+                                <TextInput
+                                    style={styles.priceInput}
+                                    value={newPrice}
+                                    onChangeText={setNewPrice}
+                                    keyboardType="numeric"
+                                    placeholder="0"
+                                    placeholderTextColor="#999"
+                                    autoFocus
+                                />
+                            </View>
+
+                            <View style={styles.modalActions}>
+                                <TouchableOpacity
+                                    style={[styles.modalBtn, styles.modalBtnCancel]}
+                                    onPress={() => setEditingProduct(null)}
+                                    disabled={savingPrice}
+                                >
+                                    <Text style={styles.modalBtnCancelText}>Cancel</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.modalBtn, styles.modalBtnSave, savingPrice && { opacity: 0.7 }]}
+                                    onPress={handleSavePrice}
+                                    disabled={savingPrice}
+                                >
+                                    {savingPrice ? (
+                                        <ActivityIndicator color={COLORS.secondary} size="small" />
+                                    ) : (
+                                        <Text style={styles.modalBtnSaveText}>Save</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </KeyboardAvoidingView>
+                </Modal>
+
+                {/* Add Deal Modal */}
+                <Modal
+                    visible={addingDeal}
+                    transparent={true}
+                    animationType="slide"
+                    onRequestClose={() => setAddingDeal(false)}
+                >
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                        style={styles.modalOverlay}
+                    >
+                        <View style={styles.modalContent}>
+                            <Text style={styles.modalTitle}>Add Special Deal</Text>
+                            <Text style={styles.modalSubtitle}>Create a new deal for all users</Text>
+
+                            <View style={styles.inputContainer}>
+                                <TextInput
+                                    style={styles.textInput}
+                                    value={newDeal.name}
+                                    onChangeText={(txt) => setNewDeal({ ...newDeal, name: txt })}
+                                    placeholder="Deal Name (e.g. Ramadan Special)"
+                                    placeholderTextColor="#999"
+                                />
+                            </View>
+
+                            <View style={[styles.inputContainer, { height: 80 }]}>
+                                <TextInput
+                                    style={[styles.textInput, { textAlignVertical: 'top' }]}
+                                    value={newDeal.description}
+                                    onChangeText={(txt) => setNewDeal({ ...newDeal, description: txt })}
+                                    placeholder="Description (e.g. 2 Zinger Burgers + Fries)"
+                                    placeholderTextColor="#999"
+                                    multiline
+                                />
+                            </View>
+
+                            <View style={styles.priceInputContainer}>
+                                <Text style={styles.currencyPrefix}>{t('rs')}</Text>
+                                <TextInput
+                                    style={styles.priceInput}
+                                    value={newDeal.price}
+                                    onChangeText={(txt) => setNewDeal({ ...newDeal, price: txt })}
+                                    keyboardType="numeric"
+                                    placeholder="Price"
+                                    placeholderTextColor="#999"
+                                />
+                            </View>
+
+                            <View style={styles.modalActions}>
+                                <TouchableOpacity
+                                    style={[styles.modalBtn, styles.modalBtnCancel]}
+                                    onPress={() => {
+                                        setAddingDeal(false);
+                                        setNewDeal({ name: '', description: '', price: '' });
+                                    }}
+                                    disabled={savingDeal}
+                                >
+                                    <Text style={styles.modalBtnCancelText}>Cancel</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.modalBtn, styles.modalBtnSave, savingDeal && { opacity: 0.7 }]}
+                                    onPress={handleSaveNewDeal}
+                                    disabled={savingDeal}
+                                >
+                                    {savingDeal ? (
+                                        <ActivityIndicator color={COLORS.secondary} size="small" />
+                                    ) : (
+                                        <Text style={styles.modalBtnSaveText}>Add Deal</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </KeyboardAvoidingView>
+                </Modal>
+
+                {/* Rename Deals Category Modal */}
+                <Modal
+                    visible={renamingCategory}
+                    transparent={true}
+                    animationType="fade"
+                    onRequestClose={() => setRenamingCategory(false)}
+                >
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                        style={styles.modalOverlay}
+                    >
+                        <View style={styles.modalContent}>
+                            <Text style={styles.modalTitle}>Rename Deals</Text>
+                            <Text style={styles.modalSubtitle}>Change the display name of this tab</Text>
+
+                            <View style={styles.inputContainer}>
+                                <TextInput
+                                    style={styles.textInput}
+                                    value={newCategoryName}
+                                    onChangeText={setNewCategoryName}
+                                    placeholder="e.g. Ramadan Offer"
+                                    placeholderTextColor="#999"
+                                    autoFocus
+                                />
+                            </View>
+
+                            <View style={styles.modalActions}>
+                                <TouchableOpacity
+                                    style={[styles.modalBtn, styles.modalBtnCancel]}
+                                    onPress={() => setRenamingCategory(false)}
+                                    disabled={savingCategory}
+                                >
+                                    <Text style={styles.modalBtnCancelText}>Cancel</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.modalBtn, styles.modalBtnSave, savingCategory && { opacity: 0.7 }]}
+                                    onPress={handleSaveCategoryName}
+                                    disabled={savingCategory}
+                                >
+                                    {savingCategory ? (
+                                        <ActivityIndicator color={COLORS.secondary} size="small" />
+                                    ) : (
+                                        <Text style={styles.modalBtnSaveText}>Save</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </KeyboardAvoidingView>
+                </Modal>
             </SafeAreaView>
         </SplitScreen>
     );
@@ -306,53 +742,84 @@ const styles = StyleSheet.create({
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.15)',
-        borderRadius: 15,
+        marginHorizontal: 15,
+        marginTop: 15,
+        borderRadius: 20,
         paddingHorizontal: 15,
-        height: 50,
-        marginBottom: 10,
+        height: 55,
+        marginBottom: 5,
+        backgroundColor: COLORS.glass,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: COLORS.glassBorder,
+        // Soft glowing shadow
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 10,
+        elevation: 4,
     },
     searchIcon: {
         fontSize: 18,
         marginRight: 10,
+        opacity: 0.8,
     },
     searchInput: {
         flex: 1,
-        color: COLORS.secondary,
-        fontSize: 15,
+        color: COLORS.textDark,
+        fontSize: 16,
         fontWeight: '500',
     },
     categoryList: {
         paddingVertical: 10,
+        paddingHorizontal: 15,
+        overflow: 'visible', // allows shadow to be seen
     },
     categoryItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        marginRight: 10,
-        borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        paddingHorizontal: 18,
+        paddingVertical: 10,
+        marginRight: 12,
+        borderRadius: 25,
+        backgroundColor: COLORS.glass,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.2)',
-        height: 40,
+        borderColor: COLORS.glassBorder,
+        height: 45,
+        // Mild shadow
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     categoryItemSelected: {
-        backgroundColor: COLORS.accent,
-        borderColor: COLORS.accent,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 18,
+        paddingVertical: 10,
+        marginRight: 12,
+        borderRadius: 25,
+        height: 45,
+        // Bold shadow for active gradient
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 6,
     },
     categoryIcon: {
-        fontSize: 18,
+        fontSize: 20,
         marginRight: 8,
     },
     categoryText: {
-        color: COLORS.secondary,
+        color: COLORS.textDark,
         fontWeight: '600',
+        fontSize: 15,
     },
     categoryTextSelected: {
-        color: COLORS.primary,
+        color: COLORS.secondary,
+        fontWeight: 'bold',
+        fontSize: 15,
     },
     productListContainer: {
         flex: 1,
@@ -389,6 +856,116 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#999',
         textAlign: 'center',
+    },
+    addDealBtn: {
+        backgroundColor: COLORS.primary,
+        paddingHorizontal: 15,
+        paddingVertical: 8,
+        borderRadius: 15,
+    },
+    addDealBtnText: {
+        color: COLORS.secondary,
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        width: '80%',
+        backgroundColor: '#0F172A',
+        borderRadius: 20,
+        padding: 24,
+        alignItems: 'center',
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.2,
+        shadowRadius: 15,
+        elevation: 10,
+    },
+    modalTitle: {
+        ...FONTS.h2,
+        color: COLORS.secondary,
+        marginBottom: 5,
+    },
+    modalSubtitle: {
+        fontSize: 14,
+        color: COLORS.textLight,
+        marginBottom: 20,
+        textAlign: 'center',
+    },
+    inputContainer: {
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 12,
+        paddingHorizontal: 15,
+        width: '100%',
+        height: 50,
+        marginBottom: 15,
+        justifyContent: 'center',
+    },
+    textInput: {
+        flex: 1,
+        fontSize: 16,
+        color: COLORS.secondary,
+    },
+    priceInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 12,
+        paddingHorizontal: 15,
+        width: '100%',
+        height: 50,
+        marginBottom: 25,
+    },
+    currencyPrefix: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: COLORS.primary,
+        marginRight: 10,
+    },
+    priceInput: {
+        flex: 1,
+        fontSize: 18,
+        color: COLORS.secondary,
+        fontWeight: '500',
+    },
+    modalActions: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+    },
+    modalBtn: {
+        flex: 1,
+        height: 45,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 12,
+    },
+    modalBtnCancel: {
+        backgroundColor: '#f5f5f5',
+        marginRight: 10,
+    },
+    modalBtnSave: {
+        backgroundColor: COLORS.primary,
+        marginLeft: 10,
+    },
+    modalBtnCancelText: {
+        color: '#666',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    modalBtnSaveText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
     }
 });
 

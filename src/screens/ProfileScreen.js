@@ -1,23 +1,32 @@
 
 import React from 'react';
 
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Animated, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Animated, Image, Platform } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+
 import SplitScreen from '../components/SplitScreen';
 import { COLORS, SIZES } from '../constants/theme';
 import { useNavigation } from '@react-navigation/native';
 import { useLanguage } from '../context/LanguageContext';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ProfileScreen = () => {
     const navigation = useNavigation();
     const { t, toggleLanguage, language } = useLanguage();
+    const { user, userData, logout } = useAuth();
     const { showToast } = useToast();
 
     const handleLanguageToggle = () => {
         toggleLanguage();
         const newLang = language === 'en' ? 'اردو' : 'English';
         showToast(language === 'en' ? `زبان تبدیل کر دی گئی ہے: ${newLang}` : `Language changed to ${newLang}`);
+    };
+
+    const handleLogout = () => {
+        logout();
+        showToast(language === 'ur' ? "لاگ آؤٹ ہو گیا" : "Logged out successfully", 'info');
     };
 
     const menuItems = [
@@ -31,22 +40,54 @@ const ProfileScreen = () => {
 
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
     const slideAnim = React.useRef(new Animated.Value(50)).current;
+    const rotateAnim = React.useRef(new Animated.Value(0)).current;
+    const pulseAnim = React.useRef(new Animated.Value(1)).current;
 
     React.useEffect(() => {
         Animated.parallel([
             Animated.timing(fadeAnim, {
                 toValue: 1,
                 duration: 800,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             }),
             Animated.spring(slideAnim, {
                 toValue: 0,
                 friction: 6,
                 tension: 40,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             })
         ]).start();
+
+        // Logo rotation animation
+        Animated.loop(
+            Animated.timing(rotateAnim, {
+                toValue: 1,
+                duration: 4000,
+                useNativeDriver: true,
+            })
+        ).start();
+
+        // Logo pulse animation
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(pulseAnim, {
+                    toValue: 1.05,
+                    duration: 1500,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(pulseAnim, {
+                    toValue: 1,
+                    duration: 1500,
+                    useNativeDriver: true,
+                })
+            ])
+        ).start();
     }, []);
+
+    const spin = rotateAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '360deg']
+    });
 
     return (
         <View style={styles.main}>
@@ -56,21 +97,36 @@ const ProfileScreen = () => {
                     <View style={styles.header}>
                         <Animated.View
                             style={[
-                                styles.profileAvatar,
+                                styles.profileAvatarContainer,
                                 {
                                     opacity: fadeAnim,
-                                    transform: [{ scale: fadeAnim }]
+                                    transform: [
+                                        { scale: pulseAnim },
+                                        { translateY: fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }
+                                    ]
                                 }
                             ]}
                         >
-                            <Image
-                                source={require('../../assets/logo.jpeg')}
-                                style={styles.avatarImage}
-                                resizeMode="cover"
-                            />
+                            <View style={styles.rotatingBorderWrapper}>
+                                <Animated.View style={[styles.rotatingBorder, { transform: [{ rotate: spin }] }]}>
+                                    <LinearGradient
+                                        colors={[COLORS.accent, 'transparent', COLORS.primary, 'transparent']}
+                                        style={styles.gradient}
+                                    />
+                                </Animated.View>
+                                <View style={styles.avatarWrapper}>
+                                    <Image
+                                        source={require('../../assets/logo.jpeg')}
+                                        style={styles.avatarImage}
+                                        resizeMode="cover"
+                                    />
+                                </View>
+                            </View>
                         </Animated.View>
-                        <Text style={styles.userName}>{t('appName')} {t('tagline').includes('SPECIALIST') ? 'Fast Food' : ''}</Text>
-                        <Text style={styles.userEmail}>{language === 'ur' ? 'بہترین معیار اور ذائقہ' : 'Serving Quality & Taste'}</Text>
+                        <Text style={styles.userName}>{userData?.name || (user ? (language === 'ur' ? 'النور کسٹمر' : 'Al Noor Customer') : t('appName'))}</Text>
+                        <View style={styles.badgeContainer}>
+                            <Text style={styles.userBadge}>{user ? (language === 'ur' ? 'بہترین کسٹمر' : 'VALUED CUSTOMER') : (language === 'ur' ? 'بہترین معیار اور ذائقہ' : 'QUALITY & TASTE')}</Text>
+                        </View>
                     </View>
 
                     {/* Content Section */}
@@ -115,7 +171,7 @@ const ProfileScreen = () => {
                             ))}
 
 
-                            <TouchableOpacity style={styles.logoutBtn}>
+                            <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
                                 <Text style={styles.logoutText}>{t('logout')}</Text>
                             </TouchableOpacity>
 
@@ -133,25 +189,49 @@ const styles = StyleSheet.create({
     main: { flex: 1 },
     container: { flex: 1 },
     header: {
-        height: '30%',
+        height: '35%',
         justifyContent: 'center',
         alignItems: 'center',
-        paddingTop: 0,
+        paddingTop: 20,
     },
-    profileAvatar: {
-        width: 85,
-        height: 85,
-        borderRadius: 42.5,
-        backgroundColor: COLORS.secondary,
-        borderWidth: 3,
-        borderColor: COLORS.accent,
+    profileAvatarContainer: {
+        width: 120,
+        height: 120,
         justifyContent: 'center',
         alignItems: 'center',
-        elevation: 10,
-        shadowColor: COLORS.accent,
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
+    },
+    rotatingBorderWrapper: {
+        width: 110,
+        height: 110,
+        borderRadius: 55,
+        justifyContent: 'center',
+        alignItems: 'center',
         overflow: 'hidden',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        padding: 3,
+    },
+    rotatingBorder: {
+        position: 'absolute',
+        width: '150%',
+        height: '150%',
+    },
+    gradient: {
+        flex: 1,
+    },
+    avatarWrapper: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 55,
+        backgroundColor: COLORS.secondary,
+        borderWidth: 2,
+        borderColor: 'rgba(255,255,255,0.1)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
+        elevation: 15,
+        shadowColor: COLORS.accent,
+        shadowOpacity: 0.4,
+        shadowRadius: 15,
     },
     avatarImage: {
         width: '100%',
@@ -168,10 +248,20 @@ const styles = StyleSheet.create({
         color: COLORS.secondary,
         marginTop: 15,
     },
-    userEmail: {
-        fontSize: 13,
-        color: 'rgba(255,255,255,0.7)',
-        marginTop: 4,
+    badgeContainer: {
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 20,
+        marginTop: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    userBadge: {
+        fontSize: 10,
+        color: COLORS.secondary,
+        fontWeight: 'bold',
+        letterSpacing: 1.2,
     },
     content: {
         flex: 1,
@@ -183,7 +273,7 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: COLORS.textDark,
+        color: COLORS.secondary,
         marginBottom: 15,
         marginTop: 10,
     },
@@ -193,7 +283,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#F2F2F2',
+        borderBottomColor: 'rgba(255,255,255,0.1)',
     },
     menuItemLeft: {
         flexDirection: 'row',
@@ -203,7 +293,7 @@ const styles = StyleSheet.create({
         width: 42,
         height: 42,
         borderRadius: 12,
-        backgroundColor: '#F7F7F7',
+        backgroundColor: 'rgba(255,255,255,0.05)',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 15,
@@ -214,26 +304,26 @@ const styles = StyleSheet.create({
     menuTitle: {
         fontSize: 15,
         fontWeight: '600',
-        color: COLORS.textDark,
+        color: COLORS.secondary,
     },
     menuValue: {
         fontSize: 12,
-        color: COLORS.primary,
+        color: COLORS.accent,
         fontWeight: 'bold',
         marginTop: 2,
     },
     arrow: {
         fontSize: 22,
-        color: '#DDD',
+        color: 'rgba(255,255,255,0.2)',
     },
     logoutBtn: {
         marginTop: 30,
-        backgroundColor: '#FFF5F5',
+        backgroundColor: 'rgba(255, 82, 82, 0.15)',
         paddingVertical: 16,
         borderRadius: 18,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#FFEAEA',
+        borderColor: 'rgba(255, 82, 82, 0.3)',
     },
     logoutText: {
         color: '#FF5252',

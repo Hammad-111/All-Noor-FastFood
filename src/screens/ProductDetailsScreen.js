@@ -76,11 +76,19 @@ const ProductDetailsScreen = ({ route }) => {
                                 }
                             ]}
                         >
-                            <Image
-                                source={getImage(product.id, product.category)}
-                                style={styles.productImage}
-                                resizeMode="contain"
-                            />
+                            {product.isSpecialDeal ? (
+                                <View style={styles.dealIconWrapper}>
+                                    <Text style={styles.dealIconLetter}>
+                                        {product.name ? product.name.charAt(0).toUpperCase() : 'D'}
+                                    </Text>
+                                </View>
+                            ) : (
+                                <Image
+                                    source={getImage(product.id, product.category)}
+                                    style={styles.productImage}
+                                    resizeMode="contain"
+                                />
+                            )}
                         </Animated.View>
                     </View>
 
@@ -187,6 +195,25 @@ const styles = StyleSheet.create({
     productImage: {
         width: width * 0.7,
         height: width * 0.7,
+    },
+    dealIconWrapper: {
+        width: width * 0.6,
+        height: width * 0.6,
+        borderRadius: (width * 0.6) / 2,
+        backgroundColor: COLORS.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.4,
+        shadowRadius: 15,
+        elevation: 10,
+    },
+    dealIconLetter: {
+        fontSize: width * 0.3,
+        fontWeight: '900',
+        color: COLORS.secondary,
+        fontStyle: 'italic',
     },
     infoSection: {
         flex: 1,
