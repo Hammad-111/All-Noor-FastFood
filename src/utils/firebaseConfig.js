@@ -2,12 +2,15 @@
 import { initializeApp, getApp, getApps } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
-import { getAuth } from "firebase/auth";
 
 // Added compat imports for libraries like expo-firebase-recaptcha
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import 'firebase/compat/firestore';
+
+// Modular persistence and auth
+import { initializeAuth, getReactNativePersistence, getAuth } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // AL NOOR FAST FOOD - Real Firebase Configuration
 const firebaseConfig = {
@@ -31,7 +34,19 @@ const app = firebase.app();
 
 // Export modular instances for use across the app
 export const db = getFirestore(app);
-export const auth = getAuth(app);
+
+// Initialize Auth with Persistence for React Native
+let authInstance;
+try {
+    authInstance = initializeAuth(app, {
+        persistence: getReactNativePersistence(AsyncStorage)
+    });
+} catch (error) {
+    // If already initialized, get the existing instance
+    authInstance = getAuth(app);
+}
+
+export const auth = authInstance;
 export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 
 export default app;

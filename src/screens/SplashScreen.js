@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, Dimensions, Image, Animated, Platform } from 'r
 import { COLORS } from '../constants/theme';
 import { useNavigation } from '@react-navigation/native';
 import { useLanguage } from '../context/LanguageContext';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
 
@@ -57,6 +58,9 @@ const SplashScreen = () => {
     const opacityAnim = useRef(new Animated.Value(0)).current;
     const textOpacity = useRef(new Animated.Value(0)).current;
     const pulseAnim = useRef(new Animated.Value(1)).current;
+    const rotateAnim = useRef(new Animated.Value(0)).current;
+    const ring1Scale = useRef(new Animated.Value(0.8)).current;
+    const ring2Scale = useRef(new Animated.Value(0.8)).current;
 
     useEffect(() => {
         // Entrance sequence
@@ -81,21 +85,60 @@ const SplashScreen = () => {
             })
         ]).start();
 
-        // Loop pulse
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(pulseAnim, {
-                    toValue: 1.05,
-                    duration: 1500,
-                    useNativeDriver: Platform.OS !== 'web',
-                }),
-                Animated.timing(pulseAnim, {
+        // Loop pulse and rotate
+        Animated.parallel([
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(pulseAnim, {
+                        toValue: 1.05,
+                        duration: 2000,
+                        useNativeDriver: Platform.OS !== 'web',
+                    }),
+                    Animated.timing(pulseAnim, {
+                        toValue: 1,
+                        duration: 2000,
+                        useNativeDriver: Platform.OS !== 'web',
+                    })
+                ])
+            ),
+            Animated.loop(
+                Animated.timing(rotateAnim, {
                     toValue: 1,
-                    duration: 1500,
+                    duration: 20000,
                     useNativeDriver: Platform.OS !== 'web',
                 })
-            ])
-        ).start();
+            ),
+            // Ring Animations
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(ring1Scale, {
+                        toValue: 1.2,
+                        duration: 4000,
+                        useNativeDriver: Platform.OS !== 'web',
+                    }),
+                    Animated.timing(ring1Scale, {
+                        toValue: 0.8,
+                        duration: 4000,
+                        useNativeDriver: Platform.OS !== 'web',
+                    })
+                ])
+            ),
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(ring2Scale, {
+                        toValue: 1.4,
+                        duration: 6000,
+                        delay: 1000,
+                        useNativeDriver: Platform.OS !== 'web',
+                    }),
+                    Animated.timing(ring2Scale, {
+                        toValue: 0.8,
+                        duration: 6000,
+                        useNativeDriver: Platform.OS !== 'web',
+                    })
+                ])
+            )
+        ]).start();
 
         const timer = setTimeout(() => {
             // Navigation is now handled by App.js to avoid "uninitialized navigation" errors
@@ -106,14 +149,20 @@ const SplashScreen = () => {
 
     return (
         <View style={styles.container}>
+            <LinearGradient
+                colors={COLORS.primaryGradient}
+                style={StyleSheet.absoluteFill}
+            />
+
             {/* Background Glows */}
-            <View style={styles.glow} />
+            <Animated.View style={[styles.glow, { transform: [{ scale: ring2Scale }] }]} />
+            <Animated.View style={[styles.glowSecondary, { transform: [{ scale: ring1Scale }] }]} />
 
             {/* Particles */}
-            {[...Array(15)].map((_, i) => (
+            {[...Array(20)].map((_, i) => (
                 <Particle
                     key={i}
-                    delay={i * 200}
+                    delay={i * 150}
                     startPos={Math.random() * width}
                 />
             ))}
@@ -125,25 +174,33 @@ const SplashScreen = () => {
                         opacity: opacityAnim,
                         transform: [
                             { scale: scaleAnim },
-                            { scale: pulseAnim }
+                            { scale: pulseAnim },
+                            {
+                                rotate: rotateAnim.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: ['0deg', '360deg']
+                                })
+                            }
                         ],
                     },
                 ]}
             >
-                <Image
-                    source={require('../../assets/logo_extracted.png')}
-                    style={styles.logo}
-                    resizeMode="contain"
-                />
+                <View style={styles.logoWrapper}>
+                    <Image
+                        source={require('../../assets/logo.jpeg')}
+                        style={styles.logo}
+                        resizeMode="cover"
+                    />
+                </View>
 
                 {/* Visual Ring */}
-                <View style={styles.logoRing} />
+                <Animated.View style={[styles.logoRing, { transform: [{ scale: pulseAnim }] }]} />
             </Animated.View>
 
             <Animated.View
                 style={{ opacity: textOpacity, alignItems: 'center' }}
             >
-                <Text style={styles.appName}>{t('appName')}</Text>
+                <Text style={styles.appName}>AL NOOR</Text>
                 <View style={styles.divider} />
                 <Text style={styles.subText}>{t('tagline')}</Text>
             </Animated.View>
@@ -170,49 +227,76 @@ const styles = StyleSheet.create({
     },
     glow: {
         position: 'absolute',
-        width: width * 1.5,
-        height: width * 1.5,
-        borderRadius: width,
-        backgroundColor: 'rgba(255, 215, 0, 0.05)',
+        width: width * 1.8,
+        height: width * 1.8,
+        borderRadius: width * 0.9,
+        backgroundColor: 'rgba(255, 215, 0, 0.03)',
+        zIndex: -1,
+    },
+    glowSecondary: {
+        position: 'absolute',
+        width: width * 1.2,
+        height: width * 1.2,
+        borderRadius: width * 0.6,
+        backgroundColor: 'rgba(255, 255, 255, 0.02)',
         zIndex: -1,
     },
     particle: {
         position: 'absolute',
-        width: 4,
-        height: 4,
-        borderRadius: 2,
+        width: 3,
+        height: 3,
+        borderRadius: 1.5,
         backgroundColor: COLORS.accent,
     },
     logoContainer: {
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 30,
+        marginBottom: 40,
+    },
+    logoWrapper: {
+        width: 180,
+        height: 180,
+        borderRadius: 90,
+        backgroundColor: '#FFF',
+        padding: 5,
+        elevation: 15,
+        shadowColor: COLORS.accent,
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        overflow: 'hidden'
     },
     logo: {
-        width: 250,
-        height: 150,
+        width: '100%',
+        height: '100%',
+        borderRadius: 90,
     },
     logoRing: {
         position: 'absolute',
-        width: 200,
-        height: 200,
-        borderRadius: 100,
-        borderWidth: 1,
-        borderColor: 'rgba(251, 215, 0, 0.1)',
+        width: 220,
+        height: 220,
+        borderRadius: 110,
+        borderWidth: 2,
+        borderColor: 'rgba(255, 215, 0, 0.2)',
         zIndex: -1,
     },
     appName: {
-        fontSize: 32,
+        fontSize: 38,
         fontWeight: 'bold',
-        color: COLORS.accent,
-        letterSpacing: 8,
+        color: COLORS.secondary,
+        letterSpacing: 10,
+        textShadowColor: 'rgba(255, 215, 0, 0.5)',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 15,
     },
     divider: {
-        width: 40,
+        width: 60,
         height: 3,
         backgroundColor: COLORS.accent,
-        marginVertical: 10,
+        marginVertical: 15,
         borderRadius: 2,
+        shadowColor: COLORS.accent,
+        shadowOpacity: 1,
+        shadowRadius: 10,
     },
     subText: {
         fontSize: 14,

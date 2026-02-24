@@ -5,7 +5,7 @@ import { COLORS, SIZES } from '../constants/theme';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { db } from '../utils/firebaseConfig';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../context/CartContext';
@@ -20,6 +20,8 @@ const SettingDetailScreen = ({ route }) => {
 
     const [orders, setOrders] = useState([]);
     const [loadingOrders, setLoadingOrders] = useState(true);
+    const [completeModal, setCompleteModal] = useState(false);
+    const [selectedOrder, setSelectedOrder] = useState(null);
 
     // --- FETCH ORDER HISTORY ---
     React.useEffect(() => {
@@ -45,6 +47,24 @@ const SettingDetailScreen = ({ route }) => {
             return unsub;
         }
     }, [user, title, t]);
+
+    const handleMarkComplete = async () => {
+        if (!selectedOrder || !user) return;
+        try {
+            await updateDoc(doc(db, 'users', user.uid, 'orders', selectedOrder.id), {
+                status: 'Delivered'
+            });
+            setCompleteModal(false);
+            setSelectedOrder(null);
+        } catch (e) {
+            console.error('Order update error:', e);
+        }
+    };
+
+    const openCompleteModal = (order) => {
+        setSelectedOrder(order);
+        setCompleteModal(true);
+    };
 
     // Modal State
     const [modalVisible, setModalVisible] = useState(false);
@@ -133,6 +153,16 @@ const SettingDetailScreen = ({ route }) => {
                             </Text>
                             <Text style={styles.orderTotal}>Rs. {order.total}</Text>
                         </View>
+                        {order.status === 'Processing' && (
+                            <TouchableOpacity
+                                style={styles.markCompleteBtn}
+                                onPress={() => openCompleteModal(order)}
+                            >
+                                <Text style={styles.markCompleteText}>
+                                    {language === 'ur' ? '✅ آرڈر مکمل کریں' : '✅ Mark as Complete'}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 ))}
                 <View style={{ height: 100 }} />
@@ -317,6 +347,51 @@ const SettingDetailScreen = ({ route }) => {
                     <View style={styles.content}>{renderContent()}</View>
                 </SafeAreaView>
             </SplitScreen>
+
+            {/* Complete Order Confirmation Modal */}
+            <Modal animationType="fade" transparent visible={completeModal}>
+                <View style={styles.modalBg}>
+                    <View style={styles.completeModalContent}>
+                        <Text style={styles.completeModalTitle}>
+                            {language === 'ur' ? 'آرڈر مکمل کریں؟' : 'Complete Order?'}
+                        </Text>
+                        <Text style={styles.completeModalDesc}>
+                            {language === 'ur'
+                                ? 'کیا آپ کو اپنا آرڈر موصول ہو گیا ہے؟ اگر کوئی مسئلہ ہے تو ہم سے رابطہ کریں۔'
+                                : 'Have you received your order? If there is any issue, please contact us.'}
+                        </Text>
+
+                        <View style={styles.contactSection}>
+                            <Text style={styles.contactTitle}>{language === 'ur' ? 'رابطہ کی تفصیلات' : 'Contact Details'}</Text>
+                            <TouchableOpacity style={styles.contactRow} onPress={() => Linking.openURL('https://wa.me/923017891391')}>
+                                <Text style={{ fontSize: 18 }}>💬</Text>
+                                <Text style={styles.contactText}>WhatsApp: +92 301 7891391</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.contactRow} onPress={() => Linking.openURL('tel:+923017891391')}>
+                                <Text style={{ fontSize: 18 }}>📞</Text>
+                                <Text style={styles.contactText}>Hotline: +92 301 7891391</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.completeModalButtons}>
+                            <TouchableOpacity
+                                style={styles.cancelBtn}
+                                onPress={() => {
+                                    setCompleteModal(false);
+                                    setSelectedOrder(null);
+                                }}
+                            >
+                                <Text style={styles.cancelBtnText}>{t('cancel')}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.completeBtn} onPress={handleMarkComplete}>
+                                <Text style={styles.completeBtnText}>
+                                    {language === 'ur' ? 'جی ہاں، مکمل ہے' : 'Yes, Completed'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -339,6 +414,20 @@ const styles = StyleSheet.create({
     orderFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     orderItems: { fontSize: 13, color: COLORS.textLight, flex: 1 },
     orderTotal: { fontWeight: 'bold', color: COLORS.accent, fontSize: 15 },
+    markCompleteBtn: {
+        marginTop: 15,
+        backgroundColor: 'rgba(76, 175, 80, 0.15)',
+        paddingVertical: 10,
+        borderRadius: 12,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(76, 175, 80, 0.3)',
+    },
+    markCompleteText: {
+        color: '#4CAF50',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
     paymentCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.glass, padding: 15, borderRadius: 18, marginBottom: 12, borderWidth: 1, borderColor: COLORS.glassBorder },
     paymentIconBox: { width: 45, height: 45, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
     paymentIcon: { fontSize: 22 },
@@ -396,7 +485,72 @@ const styles = StyleSheet.create({
     legalText: { fontSize: 13, color: COLORS.textLight, lineHeight: 20 },
     versionBox: { alignItems: 'center', marginTop: 10, paddingBottom: 20 },
     versionText: { fontSize: 12, color: COLORS.textLight, fontWeight: '600' },
-    creditText: { fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 4 }
+    creditText: { fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 4 },
+    // Complete Modal
+    completeModalContent: {
+        backgroundColor: '#1E293B',
+        width: '85%',
+        alignSelf: 'center',
+        borderRadius: 25,
+        padding: 25,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        marginBottom: 'auto',
+        marginTop: 'auto',
+    },
+    completeModalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: COLORS.secondary,
+        textAlign: 'center',
+        marginBottom: 10,
+    },
+    completeModalDesc: {
+        fontSize: 14,
+        color: COLORS.textLight,
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 20,
+    },
+    contactSection: {
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 15,
+        padding: 15,
+        marginBottom: 20,
+    },
+    contactTitle: {
+        fontSize: 13,
+        fontWeight: 'bold',
+        color: COLORS.accent,
+        marginBottom: 10,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    contactRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    contactText: {
+        fontSize: 14,
+        color: COLORS.secondary,
+        marginLeft: 10,
+    },
+    completeModalButtons: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    completeBtn: {
+        flex: 1,
+        backgroundColor: '#4CAF50',
+        padding: 15,
+        borderRadius: 15,
+        alignItems: 'center',
+    },
+    completeBtnText: {
+        color: '#FFF',
+        fontWeight: 'bold',
+    },
 });
 
 export default SettingDetailScreen;

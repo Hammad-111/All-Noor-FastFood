@@ -13,7 +13,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../utils/firebaseConfig';
 import { doc, onSnapshot, setDoc, collection, addDoc, deleteDoc } from 'firebase/firestore';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ProductCard from '../components/ProductCard';
 
 const { width } = Dimensions.get('window');
@@ -107,7 +107,10 @@ const PRODUCTS = [
     { id: 'w_l', name: 'Mineral Water (L)', price: 70, category: 'Drinks/Sides', imageKey: 'drink_01', description: 'Large water bottle.' },
 ];
 
+
+
 const HomeScreen = () => {
+    const insets = useSafeAreaInsets();
     const navigation = useNavigation();
     const { addToCart, cart } = useCart();
     const { t } = useLanguage();
@@ -115,7 +118,6 @@ const HomeScreen = () => {
     const [selectedCategory, setSelectedCategory] = useState('Deals'); // Default to Deals
     const [searchQuery, setSearchQuery] = useState('');
     const [prices, setPrices] = useState({});
-    const [dbProducts, setDbProducts] = useState([]);
     const [deals, setDeals] = useState([]);
     const [dealCategoryName, setDealCategoryName] = useState('Deals');
     const [editingProduct, setEditingProduct] = useState(null);
@@ -149,20 +151,9 @@ const HomeScreen = () => {
             }
         });
 
-        const productsRef = collection(db, 'products');
-        const unsubscribeProducts = onSnapshot(productsRef, (snapshot) => {
-            const fetchedProducts = snapshot.docs.map(doc => ({
-                ...doc.data(),
-                id: doc.id // overwrite id if it exists, or provide it
-            }));
-            // If empty, we can fallback to old PRODUCTS temporarily so the screen doesn't break
-            // before the admin clicks Seed Database.
-            if (fetchedProducts.length > 0) {
-                setDbProducts(fetchedProducts);
-            } else {
-                setDbProducts(PRODUCTS);
-            }
-        });
+        // REMOVED fetch from 'products' collection to use hardcoded PRODUCTS
+        // This ensures the app works on slow internet.
+        // We only fetch 'settings/prices' to keep prices updated.
 
         const dealsRef = collection(db, 'special_deals');
         const unsubscribeDeals = onSnapshot(dealsRef, (snapshot) => {
@@ -180,48 +171,31 @@ const HomeScreen = () => {
             unsubscribePrices();
             unsubscribeDeals();
             unsubscribeConfig();
-            unsubscribeProducts();
         };
     }, []);
 
-    const handleSeedDatabase = async () => {
-        Alert.alert(
-            "Seed Database",
-            "This will upload all local products to Firebase. Continue?",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Upload", onPress: async () => {
-                        try {
-                            for (let prod of PRODUCTS) {
-                                // Uploading using the specified ID so images map correctly
-                                await setDoc(doc(db, 'products', prod.id), prod);
-                            }
-                            Alert.alert("Success", "All products uploaded to database!");
-                        } catch (error) {
-                            console.error("Seed error", error);
-                            Alert.alert("Error", "Could not seed database.");
-                        }
-                    }
-                }
-            ]
-        );
-    };
-
-    const finalProducts = useMemo(() => {
-        return dbProducts.map(p => ({
-            ...p,
-            price: prices[p.id] !== undefined ? prices[p.id] : p.price
-        }));
-    }, [prices]);
 
     const filteredProducts = useMemo(() => {
-        const allProducts = [...finalProducts, ...deals];
-        return allProducts.filter(p =>
+        // Base products are hardcoded for speed
+        let baseProducts = [...PRODUCTS];
+
+        // Apply updated prices from Firestore if they exist
+        const productsWithLivePrices = baseProducts.map(p => ({
+            ...p,
+            price: prices[p.id] || p.price
+        }));
+
+        // Merge with dynamic Deals
+        const finalProducts = selectedCategory === 'Deals'
+            ? deals
+            : productsWithLivePrices;
+
+        return finalProducts.filter(p =>
             p.category === selectedCategory &&
-            p.name.toLowerCase().includes(searchQuery.toLowerCase())
+            (p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                p.description?.toLowerCase().includes(searchQuery.toLowerCase()))
         );
-    }, [selectedCategory, searchQuery, finalProducts, deals]);
+    }, [selectedCategory, searchQuery, prices, deals]);
 
     const handleEditPrice = (product) => {
         setEditingProduct(product);
@@ -332,13 +306,17 @@ const HomeScreen = () => {
         const isSelected = selectedCategory === item.name;
 
         return (
-            <TouchableOpacity onPress={() => setSelectedCategory(item.name)} activeOpacity={0.8}>
+            <TouchableOpacity
+                onPress={() => setSelectedCategory(item.name)}
+                activeOpacity={0.7}
+                style={{ overflow: 'hidden', borderRadius: 25, marginRight: 12 }}
+            >
                 {isSelected ? (
                     <LinearGradient
                         colors={COLORS.primaryGradient}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
-                        style={styles.categoryItemSelected}
+                        style={[styles.categoryItemSelected, { marginRight: 0 }]}
                     >
                         <Text style={styles.categoryIcon}>{item.icon}</Text>
                         <Text style={styles.categoryTextSelected}>
@@ -346,7 +324,7 @@ const HomeScreen = () => {
                         </Text>
                     </LinearGradient>
                 ) : (
-                    <BlurView intensity={70} tint="dark" style={styles.categoryItem}>
+                    <BlurView intensity={30} tint="dark" style={[styles.categoryItem, { marginRight: 0 }]}>
                         <Text style={styles.categoryIcon}>{item.icon}</Text>
                         <Text style={styles.categoryText}>{categoryDisplayName}</Text>
                     </BlurView>
@@ -376,295 +354,285 @@ const HomeScreen = () => {
     };
 
     return (
-        <SplitScreen ratio={0.35}>
-            <SafeAreaView style={styles.container} edges={['top']}>
-                <View style={styles.container}>
-                    {/* Header Section */}
-                    <View style={styles.header}>
-                        <View style={styles.topRow}>
-                            <TouchableOpacity
-                                style={styles.menuIconContainer}
-                                onPress={() => navigation.navigate('ProfileTab')}
-                            >
-                                <View style={styles.menuBar} />
-                                <View style={[styles.menuBar, { width: 15 }]} />
-                                <View style={styles.menuBar} />
-                            </TouchableOpacity>
+        <SplitScreen ratio={0.35} >
+            <View style={[styles.container, { paddingTop: insets.top }]}>
+                {/* Header Section */}
+                <View style={styles.header}>
+                    <View style={styles.topRow}>
+                        <TouchableOpacity
+                            style={styles.menuIconContainer}
+                            onPress={() => navigation.navigate('ProfileTab')}
+                        >
+                            <View style={styles.menuBar} />
+                            <View style={[styles.menuBar, { width: 15 }]} />
+                            <View style={styles.menuBar} />
+                        </TouchableOpacity>
 
-                            <View style={styles.titleWrapper}>
-                                <Text style={styles.appTitle}>AL-NOOR</Text>
-                                <View style={styles.goldLine} />
-                            </View>
-
-                            <TouchableOpacity
-                                onPress={() => navigation.navigate('CartTab')}
-                                style={styles.cartBtn}
-                            >
-                                <Text style={styles.cartBtnEmoji}>🛒</Text>
-                                {cartItemCount > 0 && (
-                                    <View style={styles.badge}>
-                                        <Text style={styles.badgeText}>{cartItemCount}</Text>
-                                    </View>
-                                )}
-                            </TouchableOpacity>
+                        <View style={styles.titleWrapper}>
+                            <Text style={styles.appTitle}>AL-NOOR</Text>
+                            <View style={styles.goldLine} />
                         </View>
 
-                        {isAdmin && (
-                            <TouchableOpacity
-                                style={{ backgroundColor: 'red', padding: 5, borderRadius: 5, marginTop: 5, alignSelf: 'flex-end' }}
-                                onPress={handleSeedDatabase}
-                            >
-                                <Text style={{ color: 'white', fontSize: 10 }}>[Admin] Seed DB</Text>
-                            </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate('CartTab')}
+                            style={styles.cartBtn}
+                        >
+                            <Text style={styles.cartBtnEmoji}>🛒</Text>
+                            {cartItemCount > 0 && (
+                                <View style={styles.badge}>
+                                    <Text style={styles.badgeText}>{cartItemCount}</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+
+
+                    <View style={styles.searchContainer}>
+                        <Text style={styles.searchIcon}>🔍</Text>
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder={t('searchPlaceholder')}
+                            placeholderTextColor="rgba(255,255,255,0.6)"
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                        />
+                    </View>
+
+                    <FlatList
+                        data={CATEGORIES}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        renderItem={renderCategory}
+                        keyExtractor={item => item.id}
+                        contentContainerStyle={styles.categoryList}
+                    />
+                </View>
+
+                {/* Content Section */}
+                <View style={styles.productListContainer}>
+                    <FlatList
+                        ListHeaderComponent={
+                            <View style={styles.sectionHeader}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
+                                    <Text style={styles.sectionTitle}>
+                                        {selectedCategory === 'Deals' ? dealCategoryName : t(`categories.${selectedCategory}`)} {t('specials')}
+                                    </Text>
+                                    {isAdmin && selectedCategory === 'Deals' && (
+                                        <View style={{ flexDirection: 'row' }}>
+                                            <TouchableOpacity
+                                                style={[styles.addDealBtn, { backgroundColor: 'rgba(0,0,0,0.05)', marginRight: 10 }]}
+                                                onPress={() => {
+                                                    setNewCategoryName(dealCategoryName);
+                                                    setRenamingCategory(true);
+                                                }}
+                                            >
+                                                <Text style={[styles.addDealBtnText, { color: COLORS.primary }]}>✏️</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                style={styles.addDealBtn}
+                                                onPress={() => setAddingDeal(true)}
+                                            >
+                                                <Text style={styles.addDealBtnText}>+ Add Deal</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    )}
+                                </View>
+                            </View>
+                        }
+                        data={filteredProducts}
+                        renderItem={renderProduct}
+                        keyExtractor={item => item.id}
+                        contentContainerStyle={[styles.productList, { paddingBottom: 150 }]}
+                        showsVerticalScrollIndicator={false}
+                        ListEmptyComponent={
+                            <View style={styles.emptySearch}>
+                                <Text style={styles.emptyEmoji}>😕</Text>
+                                <Text style={styles.emptyText}>{t('noItemsFound')} for "{searchQuery}"</Text>
+                            </View>
+                        }
+                    />
+                </View>
+            </View>
+
+            {/* Admin Price Edit Modal */}
+            <Modal
+                visible={!!editingProduct}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setEditingProduct(null)}
+            >
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={styles.modalOverlay}
+                >
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Edit Price</Text>
+                        {editingProduct && (
+                            <Text style={styles.modalSubtitle}>{editingProduct.name}</Text>
                         )}
 
-                        <View style={styles.searchContainer}>
-                            <Text style={styles.searchIcon}>🔍</Text>
+                        <View style={styles.priceInputContainer}>
+                            <Text style={styles.currencyPrefix}>{t('rs')}</Text>
                             <TextInput
-                                style={styles.searchInput}
-                                placeholder={t('searchPlaceholder')}
-                                placeholderTextColor="rgba(255,255,255,0.6)"
-                                value={searchQuery}
-                                onChangeText={setSearchQuery}
+                                style={styles.priceInput}
+                                value={newPrice}
+                                onChangeText={setNewPrice}
+                                keyboardType="numeric"
+                                placeholder="0"
+                                placeholderTextColor="#999"
+                                autoFocus
                             />
                         </View>
 
-                        <FlatList
-                            data={CATEGORIES}
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            renderItem={renderCategory}
-                            keyExtractor={item => item.id}
-                            contentContainerStyle={styles.categoryList}
-                        />
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity
+                                style={[styles.modalBtn, styles.modalBtnCancel]}
+                                onPress={() => setEditingProduct(null)}
+                                disabled={savingPrice}
+                            >
+                                <Text style={styles.modalBtnCancelText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.modalBtn, styles.modalBtnSave, savingPrice && { opacity: 0.7 }]}
+                                onPress={handleSavePrice}
+                                disabled={savingPrice}
+                            >
+                                {savingPrice ? (
+                                    <ActivityIndicator color={COLORS.secondary} size="small" />
+                                ) : (
+                                    <Text style={styles.modalBtnSaveText}>Save</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
                     </View>
+                </KeyboardAvoidingView>
+            </Modal >
 
-                    {/* Content Section */}
-                    <View style={styles.productListContainer}>
-                        <FlatList
-                            ListHeaderComponent={
-                                <View style={styles.sectionHeader}>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
-                                        <Text style={styles.sectionTitle}>
-                                            {selectedCategory === 'Deals' ? dealCategoryName : t(`categories.${selectedCategory}`)} {t('specials')}
-                                        </Text>
-                                        {isAdmin && selectedCategory === 'Deals' && (
-                                            <View style={{ flexDirection: 'row' }}>
-                                                <TouchableOpacity
-                                                    style={[styles.addDealBtn, { backgroundColor: 'rgba(0,0,0,0.05)', marginRight: 10 }]}
-                                                    onPress={() => {
-                                                        setNewCategoryName(dealCategoryName);
-                                                        setRenamingCategory(true);
-                                                    }}
-                                                >
-                                                    <Text style={[styles.addDealBtnText, { color: COLORS.primary }]}>✏️</Text>
-                                                </TouchableOpacity>
-                                                <TouchableOpacity
-                                                    style={styles.addDealBtn}
-                                                    onPress={() => setAddingDeal(true)}
-                                                >
-                                                    <Text style={styles.addDealBtnText}>+ Add Deal</Text>
-                                                </TouchableOpacity>
-                                            </View>
-                                        )}
-                                    </View>
-                                </View>
-                            }
-                            data={filteredProducts}
-                            renderItem={renderProduct}
-                            keyExtractor={item => item.id}
-                            contentContainerStyle={[styles.productList, { paddingBottom: 150 }]}
-                            showsVerticalScrollIndicator={false}
-                            ListEmptyComponent={
-                                <View style={styles.emptySearch}>
-                                    <Text style={styles.emptyEmoji}>😕</Text>
-                                    <Text style={styles.emptyText}>{t('noItemsFound')} for "{searchQuery}"</Text>
-                                </View>
-                            }
-                        />
+            {/* Add Deal Modal */}
+            < Modal
+                visible={addingDeal}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setAddingDeal(false)}
+            >
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={styles.modalOverlay}
+                >
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Add Special Deal</Text>
+                        <Text style={styles.modalSubtitle}>Create a new deal for all users</Text>
+
+                        <View style={styles.inputContainer}>
+                            <TextInput
+                                style={styles.textInput}
+                                value={newDeal.name}
+                                onChangeText={(txt) => setNewDeal({ ...newDeal, name: txt })}
+                                placeholder="Deal Name (e.g. Ramadan Special)"
+                                placeholderTextColor="#999"
+                            />
+                        </View>
+
+                        <View style={[styles.inputContainer, { height: 80 }]}>
+                            <TextInput
+                                style={[styles.textInput, { textAlignVertical: 'top' }]}
+                                value={newDeal.description}
+                                onChangeText={(txt) => setNewDeal({ ...newDeal, description: txt })}
+                                placeholder="Description (e.g. 2 Zinger Burgers + Fries)"
+                                placeholderTextColor="#999"
+                                multiline
+                            />
+                        </View>
+
+                        <View style={styles.priceInputContainer}>
+                            <Text style={styles.currencyPrefix}>{t('rs')}</Text>
+                            <TextInput
+                                style={styles.priceInput}
+                                value={newDeal.price}
+                                onChangeText={(txt) => setNewDeal({ ...newDeal, price: txt })}
+                                keyboardType="numeric"
+                                placeholder="Price"
+                                placeholderTextColor="#999"
+                            />
+                        </View>
+
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity
+                                style={[styles.modalBtn, styles.modalBtnCancel]}
+                                onPress={() => {
+                                    setAddingDeal(false);
+                                    setNewDeal({ name: '', description: '', price: '' });
+                                }}
+                                disabled={savingDeal}
+                            >
+                                <Text style={styles.modalBtnCancelText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.modalBtn, styles.modalBtnSave, savingDeal && { opacity: 0.7 }]}
+                                onPress={handleSaveNewDeal}
+                                disabled={savingDeal}
+                            >
+                                {savingDeal ? (
+                                    <ActivityIndicator color={COLORS.secondary} size="small" />
+                                ) : (
+                                    <Text style={styles.modalBtnSaveText}>Add Deal</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </View>
+                </KeyboardAvoidingView>
+            </Modal >
 
-                {/* Admin Price Edit Modal */}
-                <Modal
-                    visible={!!editingProduct}
-                    transparent={true}
-                    animationType="fade"
-                    onRequestClose={() => setEditingProduct(null)}
+            {/* Rename Deals Category Modal */}
+            < Modal
+                visible={renamingCategory}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setRenamingCategory(false)}
+            >
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={styles.modalOverlay}
                 >
-                    <KeyboardAvoidingView
-                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                        style={styles.modalOverlay}
-                    >
-                        <View style={styles.modalContent}>
-                            <Text style={styles.modalTitle}>Edit Price</Text>
-                            {editingProduct && (
-                                <Text style={styles.modalSubtitle}>{editingProduct.name}</Text>
-                            )}
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Rename Deals</Text>
+                        <Text style={styles.modalSubtitle}>Change the display name of this tab</Text>
 
-                            <View style={styles.priceInputContainer}>
-                                <Text style={styles.currencyPrefix}>{t('rs')}</Text>
-                                <TextInput
-                                    style={styles.priceInput}
-                                    value={newPrice}
-                                    onChangeText={setNewPrice}
-                                    keyboardType="numeric"
-                                    placeholder="0"
-                                    placeholderTextColor="#999"
-                                    autoFocus
-                                />
-                            </View>
-
-                            <View style={styles.modalActions}>
-                                <TouchableOpacity
-                                    style={[styles.modalBtn, styles.modalBtnCancel]}
-                                    onPress={() => setEditingProduct(null)}
-                                    disabled={savingPrice}
-                                >
-                                    <Text style={styles.modalBtnCancelText}>Cancel</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.modalBtn, styles.modalBtnSave, savingPrice && { opacity: 0.7 }]}
-                                    onPress={handleSavePrice}
-                                    disabled={savingPrice}
-                                >
-                                    {savingPrice ? (
-                                        <ActivityIndicator color={COLORS.secondary} size="small" />
-                                    ) : (
-                                        <Text style={styles.modalBtnSaveText}>Save</Text>
-                                    )}
-                                </TouchableOpacity>
-                            </View>
+                        <View style={styles.inputContainer}>
+                            <TextInput
+                                style={styles.textInput}
+                                value={newCategoryName}
+                                onChangeText={setNewCategoryName}
+                                placeholder="e.g. Ramadan Offer"
+                                placeholderTextColor="#999"
+                                autoFocus
+                            />
                         </View>
-                    </KeyboardAvoidingView>
-                </Modal>
 
-                {/* Add Deal Modal */}
-                <Modal
-                    visible={addingDeal}
-                    transparent={true}
-                    animationType="slide"
-                    onRequestClose={() => setAddingDeal(false)}
-                >
-                    <KeyboardAvoidingView
-                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                        style={styles.modalOverlay}
-                    >
-                        <View style={styles.modalContent}>
-                            <Text style={styles.modalTitle}>Add Special Deal</Text>
-                            <Text style={styles.modalSubtitle}>Create a new deal for all users</Text>
-
-                            <View style={styles.inputContainer}>
-                                <TextInput
-                                    style={styles.textInput}
-                                    value={newDeal.name}
-                                    onChangeText={(txt) => setNewDeal({ ...newDeal, name: txt })}
-                                    placeholder="Deal Name (e.g. Ramadan Special)"
-                                    placeholderTextColor="#999"
-                                />
-                            </View>
-
-                            <View style={[styles.inputContainer, { height: 80 }]}>
-                                <TextInput
-                                    style={[styles.textInput, { textAlignVertical: 'top' }]}
-                                    value={newDeal.description}
-                                    onChangeText={(txt) => setNewDeal({ ...newDeal, description: txt })}
-                                    placeholder="Description (e.g. 2 Zinger Burgers + Fries)"
-                                    placeholderTextColor="#999"
-                                    multiline
-                                />
-                            </View>
-
-                            <View style={styles.priceInputContainer}>
-                                <Text style={styles.currencyPrefix}>{t('rs')}</Text>
-                                <TextInput
-                                    style={styles.priceInput}
-                                    value={newDeal.price}
-                                    onChangeText={(txt) => setNewDeal({ ...newDeal, price: txt })}
-                                    keyboardType="numeric"
-                                    placeholder="Price"
-                                    placeholderTextColor="#999"
-                                />
-                            </View>
-
-                            <View style={styles.modalActions}>
-                                <TouchableOpacity
-                                    style={[styles.modalBtn, styles.modalBtnCancel]}
-                                    onPress={() => {
-                                        setAddingDeal(false);
-                                        setNewDeal({ name: '', description: '', price: '' });
-                                    }}
-                                    disabled={savingDeal}
-                                >
-                                    <Text style={styles.modalBtnCancelText}>Cancel</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.modalBtn, styles.modalBtnSave, savingDeal && { opacity: 0.7 }]}
-                                    onPress={handleSaveNewDeal}
-                                    disabled={savingDeal}
-                                >
-                                    {savingDeal ? (
-                                        <ActivityIndicator color={COLORS.secondary} size="small" />
-                                    ) : (
-                                        <Text style={styles.modalBtnSaveText}>Add Deal</Text>
-                                    )}
-                                </TouchableOpacity>
-                            </View>
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity
+                                style={[styles.modalBtn, styles.modalBtnCancel]}
+                                onPress={() => setRenamingCategory(false)}
+                                disabled={savingCategory}
+                            >
+                                <Text style={styles.modalBtnCancelText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.modalBtn, styles.modalBtnSave, savingCategory && { opacity: 0.7 }]}
+                                onPress={handleSaveCategoryName}
+                                disabled={savingCategory}
+                            >
+                                {savingCategory ? (
+                                    <ActivityIndicator color={COLORS.secondary} size="small" />
+                                ) : (
+                                    <Text style={styles.modalBtnSaveText}>Save</Text>
+                                )}
+                            </TouchableOpacity>
                         </View>
-                    </KeyboardAvoidingView>
-                </Modal>
-
-                {/* Rename Deals Category Modal */}
-                <Modal
-                    visible={renamingCategory}
-                    transparent={true}
-                    animationType="fade"
-                    onRequestClose={() => setRenamingCategory(false)}
-                >
-                    <KeyboardAvoidingView
-                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                        style={styles.modalOverlay}
-                    >
-                        <View style={styles.modalContent}>
-                            <Text style={styles.modalTitle}>Rename Deals</Text>
-                            <Text style={styles.modalSubtitle}>Change the display name of this tab</Text>
-
-                            <View style={styles.inputContainer}>
-                                <TextInput
-                                    style={styles.textInput}
-                                    value={newCategoryName}
-                                    onChangeText={setNewCategoryName}
-                                    placeholder="e.g. Ramadan Offer"
-                                    placeholderTextColor="#999"
-                                    autoFocus
-                                />
-                            </View>
-
-                            <View style={styles.modalActions}>
-                                <TouchableOpacity
-                                    style={[styles.modalBtn, styles.modalBtnCancel]}
-                                    onPress={() => setRenamingCategory(false)}
-                                    disabled={savingCategory}
-                                >
-                                    <Text style={styles.modalBtnCancelText}>Cancel</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.modalBtn, styles.modalBtnSave, savingCategory && { opacity: 0.7 }]}
-                                    onPress={handleSaveCategoryName}
-                                    disabled={savingCategory}
-                                >
-                                    {savingCategory ? (
-                                        <ActivityIndicator color={COLORS.secondary} size="small" />
-                                    ) : (
-                                        <Text style={styles.modalBtnSaveText}>Save</Text>
-                                    )}
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </KeyboardAvoidingView>
-                </Modal>
-            </SafeAreaView>
-        </SplitScreen>
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal >
+        </SplitScreen >
     );
 };
 
@@ -673,8 +641,8 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     header: {
-        height: '33%',
         paddingHorizontal: SIZES.padding,
+        paddingBottom: 10,
     },
     topRow: {
         flexDirection: 'row',
@@ -754,9 +722,9 @@ const styles = StyleSheet.create({
         // Soft glowing shadow
         shadowColor: COLORS.primary,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 10,
-        elevation: 4,
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 2,
     },
     searchIcon: {
         fontSize: 18,
@@ -781,16 +749,10 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         marginRight: 12,
         borderRadius: 25,
-        backgroundColor: COLORS.glass,
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
         borderWidth: 1,
-        borderColor: COLORS.glassBorder,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
         height: 45,
-        // Mild shadow
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
     },
     categoryItemSelected: {
         flexDirection: 'row',
@@ -802,10 +764,10 @@ const styles = StyleSheet.create({
         height: 45,
         // Bold shadow for active gradient
         shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 6,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+        elevation: 3,
     },
     categoryIcon: {
         fontSize: 20,

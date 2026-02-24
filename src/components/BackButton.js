@@ -27,7 +27,7 @@ const BackButton = ({ color = COLORS.secondary, style }) => {
     return (
         <Animated.View style={{ transform: [{ scale }] }}>
             <TouchableOpacity
-                onPress={() => navigation.goBack()}
+                onPress={() => navigation.canGoBack() && navigation.goBack()}
                 onPressIn={handlePressIn}
                 onPressOut={handlePressOut}
                 activeOpacity={0.8}

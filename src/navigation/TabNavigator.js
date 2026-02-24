@@ -5,6 +5,7 @@ import { StyleSheet, View, Text } from 'react-native';
 import HomeScreen from '../screens/HomeScreen';
 import CheckoutScreen from '../screens/CheckoutScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import FavoritesScreen from '../screens/FavoritesScreen';
 import CustomTabBar from '../components/CustomTabBar';
 import { COLORS } from '../constants/theme';
 import { useCart } from '../context/CartContext';
@@ -27,6 +28,13 @@ const TabNavigator = () => {
                 component={HomeScreen}
                 options={{
                     tabBarLabel: 'Home',
+                }}
+            />
+            <Tab.Screen
+                name="FavoritesTab"
+                component={FavoritesScreen}
+                options={{
+                    tabBarLabel: 'Favorites',
                 }}
             />
             <Tab.Screen

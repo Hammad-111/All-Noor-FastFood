@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useToast } from './ToastContext';
 import { useAuth } from './AuthContext';
+import { useLanguage } from './LanguageContext';
 import { db } from '../utils/firebaseConfig';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 
@@ -13,25 +14,36 @@ export const CartProvider = ({ children }) => {
     const [addresses, setAddresses] = useState([]);
 
     const { showToast } = useToast();
+    const { language, t } = useLanguage();
 
-    // --- FIRESTORE SYNC: ADDRESSES ---
+    // --- FIRESTORE SYNC: ADDRESSES & FAVORITES ---
     useEffect(() => {
         if (!user) {
             setAddresses([]);
+            setFavorites([]);
             return;
         }
 
         const unsub = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                if (data.addresses) {
-                    setAddresses(data.addresses);
-                }
+                if (data.addresses) setAddresses(data.addresses);
+                if (data.favorites) setFavorites(data.favorites);
             }
         });
 
         return unsub;
     }, [user]);
+
+    const syncFavoritesToFirestore = async (newFavs) => {
+        if (user) {
+            try {
+                await setDoc(doc(db, 'users', user.uid), { favorites: newFavs }, { merge: true });
+            } catch (error) {
+                console.error("Favorites Sync Error:", error);
+            }
+        }
+    };
 
     const syncAddressesToFirestore = async (newAddresses) => {
         if (user) {
@@ -54,12 +66,12 @@ export const CartProvider = ({ children }) => {
             }
             return [...prevCart, { ...product, quantity: 1 }];
         });
-        showToast(`${product.name} added to cart!`);
+        showToast(`${product.name} ${t('addedToCart')}`);
     };
 
     const removeFromCart = (productId) => {
         setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
-        showToast(`Item removed from cart`, 'info');
+        showToast(t('removedFromCart'), 'info');
     };
 
     const updateQuantity = (productId, quantity) => {
@@ -76,18 +88,22 @@ export const CartProvider = ({ children }) => {
 
     const clearCart = () => {
         setCart([]);
-        showToast('Cart cleared', 'info');
+        showToast(t('cartCleared'), 'info');
     };
 
     const toggleFavorite = (product) => {
         setFavorites(prev => {
+            let updated;
             const isFav = prev.find(p => p.id === product.id);
             if (isFav) {
-                showToast(`Removed from favorites`, 'info');
-                return prev.filter(p => p.id !== product.id);
+                showToast(t('removedFromFavorites'), 'info');
+                updated = prev.filter(p => p.id !== product.id);
+            } else {
+                showToast(t('addedToFavorites'));
+                updated = [...prev, product];
             }
-            showToast(`Added to favorites!`);
-            return [...prev, product];
+            syncFavoritesToFirestore(updated);
+            return updated;
         });
     };
 

@@ -53,7 +53,7 @@ const ProductDetailsScreen = ({ route }) => {
     return (
         <View style={styles.mainContainer}>
             <SplitScreen ratio={0.42}>
-                <SafeAreaView style={[styles.container, { paddingBottom: Math.max(insets.bottom, 15) }]} edges={['top']}>
+                <View style={[styles.container, { paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, 15) }]}>
                     {/* Top Section: Header & Image */}
                     <View style={styles.imageSection}>
                         <View style={styles.headerRow}>
@@ -141,7 +141,7 @@ const ProductDetailsScreen = ({ route }) => {
                             </View>
                         </Animated.View>
                     </View>
-                </SafeAreaView>
+                </View>
             </SplitScreen>
         </View>
     );
@@ -155,9 +155,9 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     imageSection: {
-        height: '42%',
         paddingHorizontal: 20,
         alignItems: 'center',
+        paddingBottom: 20,
     },
     headerRow: {
         flexDirection: 'row',
@@ -204,10 +204,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.4,
-        shadowRadius: 15,
-        elevation: 10,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+        elevation: 6,
     },
     dealIconLetter: {
         fontSize: width * 0.3,
@@ -290,11 +290,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 30,
         paddingVertical: 15,
         borderRadius: 18,
-        elevation: 8,
+        elevation: 4,
         shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
     },
     buyButtonText: {
         color: COLORS.secondary,

@@ -17,6 +17,8 @@ import { AuthProvider } from './src/context/AuthContext';
 import TabNavigator from './src/navigation/TabNavigator';
 import SettingDetailScreen from './src/screens/SettingDetailScreen';
 import LoginScreen from './src/screens/LoginScreen';
+import DeveloperPortfolioScreen from './src/screens/DeveloperPortfolioScreen';
+import FavoritesScreen from './src/screens/FavoritesScreen';
 import Toast from './src/components/Toast';
 import { View } from 'react-native';
 import { useAuth } from './src/context/AuthContext';
@@ -55,6 +57,8 @@ const AppStack = () => {
           <Stack.Screen name="Main" component={TabNavigator} />
           <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
           <Stack.Screen name="SettingDetail" component={SettingDetailScreen} />
+          <Stack.Screen name="DeveloperPortfolio" component={DeveloperPortfolioScreen} />
+          <Stack.Screen name="Favorites" component={FavoritesScreen} />
         </>
       )}
     </Stack.Navigator>
@@ -69,7 +73,7 @@ export default function App() {
           <ToastProvider>
             <CartProvider>
               <View style={{ flex: 1, backgroundColor: COLORS.primary }}>
-                <StatusBar style="light" backgroundColor={COLORS.primary} />
+                <StatusBar style="light" translucent backgroundColor="transparent" />
                 <NavigationContainer
                   documentTitle={{
                     formatter: (options, route) => `Al Noor Fast Food - ${route?.name || 'Loading'}`,

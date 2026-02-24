@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Animated, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { COLORS } from '../constants/theme';
 import { auth, db } from '../utils/firebaseConfig';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -10,8 +10,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
 import WaveDivider from '../components/WaveDivider';
 import BackButton from '../components/BackButton';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons as Icon } from '@expo/vector-icons';
 
 const LoginScreen = ({ navigation }) => {
+    const insets = useSafeAreaInsets();
     const { t, language } = useLanguage();
     const { showToast } = useToast();
     const [email, setEmail] = useState('');
@@ -19,6 +22,9 @@ const LoginScreen = ({ navigation }) => {
     const [name, setName] = useState('');
     const [isRegister, setIsRegister] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [showForgotModal, setShowForgotModal] = useState(false);
+    const [resetEmail, setResetEmail] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
 
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(30)).current;
@@ -37,6 +43,25 @@ const LoginScreen = ({ navigation }) => {
             })
         ]).start();
     }, [isRegister]);
+
+    const handleForgotPassword = async () => {
+        if (!resetEmail) {
+            showToast("Please enter your email", "error");
+            return;
+        }
+        try {
+            setLoading(true);
+            await sendPasswordResetEmail(auth, resetEmail);
+            showToast("Password reset link sent to your email!", "success");
+            setShowForgotModal(false);
+            setResetEmail('');
+        } catch (error) {
+            console.error("Reset Error:", error);
+            showToast(error.message, "error");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleAuth = async () => {
         if (!email || !password) {
@@ -86,12 +111,13 @@ const LoginScreen = ({ navigation }) => {
     return (
         <View style={styles.main}>
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -30}
                 style={{ flex: 1 }}
             >
-                <SafeAreaView style={styles.topSection} edges={['top']}>
+                <View style={[styles.topSection, { paddingTop: insets.top }]}>
                     <View style={styles.header}>
-                        <BackButton />
+                        {navigation.canGoBack() && <BackButton />}
                     </View>
 
                     <Animated.View style={[styles.brandContainer, { opacity: fadeAnim }]}>
@@ -101,7 +127,7 @@ const LoginScreen = ({ navigation }) => {
                         <Text style={styles.welcomeText}>AL NOOR</Text>
                         <Text style={styles.tagline}>{t('tagline')}</Text>
                     </Animated.View>
-                </SafeAreaView>
+                </View>
 
                 <View style={styles.bottomSection}>
                     <WaveDivider fill={COLORS.background} customTop={-38} />
@@ -121,7 +147,7 @@ const LoginScreen = ({ navigation }) => {
 
                             {isRegister && (
                                 <View style={styles.inputBox}>
-                                    <Text style={styles.inputIcon}>👤</Text>
+                                    <Icon name="person-outline" size={20} color={COLORS.accent} style={styles.inputIcon} />
                                     <TextInput
                                         style={styles.input}
                                         placeholder={language === 'ur' ? "آپ کا نام" : "Full Name"}
@@ -133,7 +159,7 @@ const LoginScreen = ({ navigation }) => {
                             )}
 
                             <View style={styles.inputBox}>
-                                <Text style={styles.inputIcon}>📧</Text>
+                                <Icon name="mail-outline" size={20} color={COLORS.accent} style={styles.inputIcon} />
                                 <TextInput
                                     style={styles.input}
                                     placeholder="email@example.com"
@@ -146,16 +172,33 @@ const LoginScreen = ({ navigation }) => {
                             </View>
 
                             <View style={styles.inputBox}>
-                                <Text style={styles.inputIcon}>🔒</Text>
+                                <Icon name="lock-closed-outline" size={20} color={COLORS.accent} style={styles.inputIcon} />
                                 <TextInput
                                     style={styles.input}
                                     placeholder="••••••"
                                     placeholderTextColor="#AAA"
-                                    secureTextEntry
+                                    secureTextEntry={!showPassword}
                                     value={password}
                                     onChangeText={setPassword}
                                 />
+                                <TouchableOpacity
+                                    onPress={() => setShowPassword(!showPassword)}
+                                    style={styles.eyeIcon}
+                                >
+                                    <Icon
+                                        name={showPassword ? "eye-off-outline" : "eye-outline"}
+                                        size={20}
+                                        color={COLORS.accent}
+                                    />
+                                </TouchableOpacity>
                             </View>
+
+                            <TouchableOpacity
+                                onPress={() => setShowForgotModal(true)}
+                                style={{ alignSelf: 'flex-end', marginBottom: 20, marginRight: 5 }}
+                            >
+                                <Text style={styles.forgotText}>{language === 'ur' ? 'پاس ورڈ بھول گئے؟' : 'Forgot Password?'}</Text>
+                            </TouchableOpacity>
 
                             <TouchableOpacity
                                 style={[styles.actionBtn, loading && styles.btnDisabled]}
@@ -169,7 +212,7 @@ const LoginScreen = ({ navigation }) => {
 
                             <TouchableOpacity
                                 onPress={() => setIsRegister(!isRegister)}
-                                style={{ marginTop: 25 }}
+                                style={{ marginTop: 15 }}
                             >
                                 <Text style={styles.toggleText}>
                                     {isRegister ? 'Already have an account? Login' : "Don't have an account? Sign Up"}
@@ -178,14 +221,61 @@ const LoginScreen = ({ navigation }) => {
                         </Animated.View>
                     </ScrollView>
                 </View>
+
+                {/* MODAL: Forgot Password */}
+                {showForgotModal && (
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalContent}>
+                            <Text style={styles.modalTitle}>{language === 'ur' ? 'پاس ورڈ ری سیٹ کریں' : 'Reset Password'}</Text>
+                            <Text style={styles.modalSub}>
+                                {language === 'ur'
+                                    ? 'ری سیٹ لنک حاصل کرنے کے لیے اپنا ای میل درج کریں۔'
+                                    : 'Enter your email to receive a secure reset link.'}
+                            </Text>
+
+                            <View style={styles.inputBox}>
+                                <Icon name="mail-outline" size={20} color={COLORS.accent} style={styles.inputIcon} />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="email@example.com"
+                                    placeholderTextColor="#AAA"
+                                    keyboardType="email-address"
+                                    autoCapitalize="none"
+                                    value={resetEmail}
+                                    onChangeText={setResetEmail}
+                                />
+                            </View>
+
+                            <View style={styles.modalFooter}>
+                                <TouchableOpacity
+                                    style={styles.cancelBtn}
+                                    onPress={() => setShowForgotModal(false)}
+                                >
+                                    <Text style={styles.cancelBtnText}>{language === 'ur' ? 'منسوخ کریں' : 'Cancel'}</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.resetBtn, loading && styles.btnDisabled]}
+                                    onPress={handleForgotPassword}
+                                    disabled={loading}
+                                >
+                                    <Text style={styles.resetBtnText}>{loading ? '...' : (language === 'ur' ? 'بھیجیں' : 'Send link')}</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                )}
             </KeyboardAvoidingView>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    main: { flex: 1, backgroundColor: COLORS.primary, overflow: 'hidden' },
-    topSection: { height: '35%', alignItems: 'center' },
+    main: { flex: 1, backgroundColor: COLORS.background, overflow: 'hidden' },
+    topSection: {
+        alignItems: 'center',
+        paddingBottom: 20,
+        backgroundColor: COLORS.primary
+    },
     header: { width: '100%', paddingHorizontal: 20, paddingTop: 10 },
     brandContainer: { alignItems: 'center', marginTop: 10 },
     logoWrapper: {
@@ -194,31 +284,36 @@ const styles = StyleSheet.create({
         borderRadius: 50,
         backgroundColor: '#FFF',
         padding: 5,
-        elevation: 10,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.2,
-        shadowRadius: 10,
+        elevation: 5,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
     },
     logo: { width: '100%', height: '100%', borderRadius: 50 },
     welcomeText: { fontSize: 28, fontWeight: 'bold', color: COLORS.secondary, marginTop: 15 },
     tagline: { fontSize: 12, color: 'rgba(255,255,255,0.7)', letterSpacing: 2 },
     bottomSection: { flex: 1, backgroundColor: COLORS.background, paddingHorizontal: 0, paddingTop: 0 },
-    scrollContent: { paddingHorizontal: 30, paddingTop: 60, paddingBottom: 40 },
+    scrollContent: { paddingHorizontal: 30, paddingTop: 60, paddingBottom: 20 },
     formContainer: { width: '100%', alignItems: 'center' },
     formTitle: { fontSize: 24, fontWeight: 'bold', color: COLORS.textDark, marginBottom: 10 },
     formSub: { fontSize: 14, color: '#888', textAlign: 'center', marginBottom: 30, lineHeight: 20 },
     inputBox: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F5F5F5',
+        backgroundColor: COLORS.glass,
+        borderWidth: 1,
+        borderColor: COLORS.glassBorder,
         borderRadius: 15,
         paddingHorizontal: 15,
         width: '100%',
         marginBottom: 15,
     },
-    inputIcon: { fontSize: 18, marginRight: 10 },
-    input: { flex: 1, height: 55, fontSize: 16, color: COLORS.textDark },
+    inputIcon: { marginRight: 15 },
+    eyeIcon: {
+        padding: 5,
+    },
+    input: { flex: 1, height: 55, fontSize: 16, color: COLORS.secondary },
     actionBtn: {
         width: '100%',
         height: 55,
@@ -234,7 +329,40 @@ const styles = StyleSheet.create({
     },
     btnDisabled: { opacity: 0.7 },
     btnText: { color: COLORS.secondary, fontSize: 18, fontWeight: 'bold' },
-    toggleText: { color: COLORS.primary, fontWeight: '600', fontSize: 14 }
+    toggleText: { color: COLORS.primary, fontWeight: '600', fontSize: 14 },
+    forgotText: { color: COLORS.primary, fontSize: 13, fontWeight: '500' },
+    // Modal Styles
+    modalOverlay: {
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 100,
+        paddingHorizontal: 20,
+    },
+    modalContent: {
+        width: '100%',
+        backgroundColor: COLORS.background,
+        borderRadius: 20,
+        padding: 25,
+        borderWidth: 1,
+        borderColor: COLORS.glassBorder,
+        elevation: 10,
+    },
+    modalTitle: { fontSize: 22, fontWeight: 'bold', color: COLORS.secondary, marginBottom: 10 },
+    modalSub: { fontSize: 14, color: '#888', marginBottom: 20, lineHeight: 20 },
+    modalFooter: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10 },
+    cancelBtn: { paddingVertical: 10, paddingHorizontal: 20, marginRight: 10 },
+    cancelBtnText: { color: '#888', fontSize: 16, fontWeight: '600' },
+    resetBtn: {
+        backgroundColor: COLORS.primary,
+        paddingVertical: 12,
+        paddingHorizontal: 25,
+        borderRadius: 12,
+        elevation: 3,
+    },
+    resetBtnText: { color: COLORS.secondary, fontSize: 16, fontWeight: 'bold' },
 });
 
 export default LoginScreen;

@@ -7,11 +7,12 @@ import { useLanguage } from '../context/LanguageContext';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../utils/firebaseConfig';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { collection, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
 
 const CheckoutScreen = ({ navigation }) => {
+    const insets = useSafeAreaInsets();
     const { cart, removeFromCart, clearCart, updateQuantity, getDefaultAddress } = useCart();
     const { user } = useAuth();
     const { t, language } = useLanguage();
@@ -58,35 +59,15 @@ const CheckoutScreen = ({ navigation }) => {
         }
 
         try {
-            setLoading(true); // Using handleDevBypass style or common loading
+            setLoading(true);
 
-            // 1. Prepare WhatsApp Message
-            let message = `🧾 *AL NOOR FAST FOOD - RECEIPT* 🧾\n`;
-            message += `--------------------------------\n`;
-            message += `📅 *Date:* ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}\n`;
-            message += `📍 *Delivery Address:*\n${address}\n`;
-            message += `--------------------------------\n\n`;
-
-            message += `🍽️ *ORDER ITEMS:*\n`;
-            cart.forEach(item => {
-                const itemTotal = item.price * item.quantity;
-                message += `▪️ ${item.quantity}x ${item.name} \n   └ Rs. ${item.price} x ${item.quantity} = Rs. ${itemTotal}\n`;
-            });
-
-            message += `\n--------------------------------\n`;
-            message += `💵 *Subtotal:* Rs. ${subtotal}\n`;
-            message += `🛵 *Delivery:* Rs. ${deliveryFee}\n`;
-            message += `--------------------------------\n`;
-            message += `💰 *TOTAL AMOUNT: Rs. ${total}*\n`;
-            message += `--------------------------------\n`;
-            message += `\n🚀 _Please confirm my order!_`;
-
-            const phoneNumber = "923017891391";
-            const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-
-            // 2. SAVE TO FIRESTORE FIRST
+            // 1. GENERATE ID & SAVE TO FIRESTORE FIRST (to get Order ID for receipt)
+            let orderId = 'PENDING';
             if (user) {
-                await addDoc(collection(db, 'users', user.uid, 'orders'), {
+                const orderRef = doc(collection(db, 'users', user.uid, 'orders'));
+                orderId = orderRef.id.slice(-6).toUpperCase();
+
+                await setDoc(orderRef, {
                     items: cart,
                     total: total,
                     subtotal: subtotal,
@@ -98,11 +79,51 @@ const CheckoutScreen = ({ navigation }) => {
                 });
             }
 
+            // 2. Prepare PREMIUM THERMAL RECEIPT
+            const date = new Date().toLocaleDateString();
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            let message = `*━━━━━━━━━━━━━━━━━━━━━━━*\n`;
+            message += `  🌟  *AL NOOR FAST FOOD*  🌟\n`;
+            message += `    _FAST FOOD SPECIALIST_\n`;
+            message += `*━━━━━━━━━━━━━━━━━━━━━━━*\n\n`;
+
+            message += `📝 *ORDER DETAILS*\n`;
+            message += `▫️ *ID:*        #${orderId}\n`;
+            message += `▫️ *Date:*    ${date}\n`;
+            message += `▫️ *Time:*    ${time}\n\n`;
+
+            message += `📍 *DELIVERY TO:*\n`;
+            message += `_${address}_\n\n`;
+
+            message += `🛒 *ORDER SUMMARY:*\n`;
+            message += `*---------------------------------------*\n`;
+
+            cart.forEach(item => {
+                const itemTotal = item.price * item.quantity;
+                message += `*${item.quantity}x*   ${item.name}\n`;
+                message += `        _Rs. ${item.price}  ➔  Rs. ${itemTotal}_\n\n`;
+            });
+
+            message += `*---------------------------------------*\n`;
+            message += `▫️ *Subtotal:*       Rs. ${subtotal}\n`;
+            message += `▫️ *Delivery:*       Rs. ${deliveryFee}\n`;
+            message += `*---------------------------------------*\n`;
+            message += `💰 *TOTAL PAYABLE:  Rs. ${total}*\n`;
+            message += `*---------------------------------------*\n`;
+
+            message += `\n✨ *THANK YOU FOR ORDERING!* ✨\n`;
+            message += `✅ _Please confirm to start preparing._\n\n`;
+            message += `*━━━━━━━━━━━━━━━━━━━━━━━*`;
+
+            const phoneNumber = "923017891391";
+            const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+
             // 3. Open WhatsApp and Clear Cart
             const canOpen = await Linking.canOpenURL(url);
             if (canOpen) {
                 await Linking.openURL(url);
-                showToast("Order saved! Redirecting to WhatsApp...", "success");
+                showToast("Order placed successfully!", "success");
                 clearCart();
                 navigation.navigate('HomeTab');
             } else {
@@ -229,7 +250,7 @@ const CheckoutScreen = ({ navigation }) => {
     return (
         <View style={styles.mainContainer}>
             <SplitScreen ratio={0.33}>
-                <SafeAreaView style={styles.container} edges={['top']}>
+                <View style={[styles.container, { paddingTop: insets.top }]}>
                     <View style={styles.header}>
                         <BackButton />
                         <Text style={styles.title}>{t('myCart')}</Text>
@@ -270,7 +291,7 @@ const CheckoutScreen = ({ navigation }) => {
                             </View>
                         }
                     />
-                </SafeAreaView>
+                </View>
             </SplitScreen>
         </View>
     );
@@ -375,8 +396,8 @@ const styles = StyleSheet.create({
         marginHorizontal: 20,
         shadowColor: COLORS.primary,
         shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 3,
+        shadowRadius: 8,
+        elevation: 2,
     },
     itemMain: {
         flexDirection: 'row',

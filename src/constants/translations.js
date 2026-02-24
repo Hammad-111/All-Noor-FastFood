@@ -4,11 +4,13 @@ export const translations = {
         appName: 'AL NOOR',
         tagline: 'FAST FOOD SPECIALIST',
         loading: 'PREPARING TASTE...',
+        errorOccurred: 'An error occurred. Please try again.',
 
         // Tabs
         home: 'Home',
         cart: 'Cart',
         profile: 'Profile',
+        favorites: 'Favorites',
 
         // Home Screen
         searchPlaceholder: 'Search dishes...',
@@ -27,6 +29,15 @@ export const translations = {
         noItemsFound: 'No items found',
         addToCart: '+',
         rs: 'Rs.',
+        deals: 'Deals',
+        addDeal: 'Add Deal',
+        dealName: 'Deal Name',
+        dealPrice: 'Deal Price',
+        dealDescription: 'Description (optional)',
+        saveDeal: 'Save Deal',
+        editPrice: 'Edit Price',
+        savePrice: 'Save Price',
+        newPrice: 'New Price',
 
         // Cart / Checkout
         myCart: 'My Cart',
@@ -43,8 +54,19 @@ export const translations = {
         billSummary: 'Bill Summary',
         totalBill: 'Total Bill',
         orderWhatsapp: 'Order on WhatsApp',
+        addedToCart: 'Added to cart!',
+        removedFromCart: 'Item removed from cart',
+        cartCleared: 'Cart cleared',
 
-        // Profile & Setting Detail
+        // Favorites
+        favoritesTitle: 'Favorites',
+        noFavoritesTitle: 'No Favorites Yet',
+        noFavoritesSubtitle: 'Tap the star icon on any product to save it here for later.',
+        browseMenu: 'Browse Menu',
+        addedToFavorites: 'Added to favorites!',
+        removedFromFavorites: 'Removed from favorites',
+
+        // Profile
         accountOverview: 'Account Overview',
         myOrders: 'My Orders',
         paymentMethods: 'Payment Methods',
@@ -53,6 +75,26 @@ export const translations = {
         support: 'Support',
         logout: 'Log Out',
         changeLanguage: 'Change Language',
+        valuedCustomer: 'VALUED CUSTOMER',
+        alNoorCustomer: 'Al Noor Customer',
+        editProfile: 'Edit Profile',
+        fullName: 'Full Name',
+        phoneNumber: 'Phone Number',
+        enterName: 'Enter your name',
+        enterPhone: 'Enter phone number',
+        saveChanges: 'Save Changes',
+        profileUpdated: 'Profile updated successfully',
+        loggedOut: 'Logged out successfully',
+        qualityTaste: 'QUALITY & TASTE',
+
+        // Account Deletion
+        deleteAccount: 'Delete My Account',
+        deleteAccountTitle: 'Delete Account?',
+        deleteAccountDesc: 'Are you sure you want to delete your account? This action is permanent and all your data will be cleared.',
+        deleteConfirm: 'Delete',
+        accountDeleted: 'Account deleted successfully',
+        deleteError: 'Failed to delete account.',
+        reLoginRequired: 'Security: Please Re-Login to delete account',
 
         // Detailed Sections
         orderNo: 'Order',
@@ -75,17 +117,28 @@ export const translations = {
         editAddress: 'Edit Address',
         addressTitlePlaceholder: 'Title (e.g. Home, Office)',
         addressDetailsPlaceholder: 'Full Address Details...',
+
+        // Product Details
+        addToCartBtn: 'Add to Cart',
+        description: 'Description',
+        price: 'Price',
+        alreadyInCart: 'Already in cart',
+
+        // Developer
+        viewPortfolio: 'VIEW PORTFOLIO',
     },
     ur: {
         // App General
         appName: 'النور',
         tagline: 'فاسٹ فوڈ سپیشلسٹ',
         loading: 'ذائقہ تیار ہو رہا ہے...',
+        errorOccurred: 'خرابی آ گئی۔ دوبارہ کوشش کریں۔',
 
         // Tabs
         home: 'ہوم',
         cart: 'کارٹ',
         profile: 'پروفائل',
+        favorites: 'پسندیدہ',
 
         // Home Screen
         searchPlaceholder: 'کھانے تلاش کریں...',
@@ -104,6 +157,15 @@ export const translations = {
         noItemsFound: 'کوئی چیز نہیں ملی',
         addToCart: 'شامل کریں',
         rs: 'روپے',
+        deals: 'ڈیلز',
+        addDeal: 'ڈیل شامل کریں',
+        dealName: 'ڈیل کا نام',
+        dealPrice: 'ڈیل کی قیمت',
+        dealDescription: 'تفصیل (اختیاری)',
+        saveDeal: 'ڈیل محفوظ کریں',
+        editPrice: 'قیمت تبدیل کریں',
+        savePrice: 'قیمت محفوظ کریں',
+        newPrice: 'نئی قیمت',
 
         // Cart / Checkout
         myCart: 'میرا کارٹ',
@@ -114,14 +176,25 @@ export const translations = {
         paymentMethod: 'ادائیگی کا طریقہ',
         cashOnDelivery: 'کیش آن ڈیلیوری',
         deliveryAddress: 'ڈیلیوری کا پتہ',
-        addressPlaceholder: 'مثال کے طور پر: مکان نمبر 1، بلاک اے...',
+        addressPlaceholder: 'مثال: مکان نمبر 1، بلاک اے...',
         subtotal: 'سب ٹوٹل',
         deliveryFee: 'ڈیلیوری فیس',
         billSummary: 'بل کی تفصیل',
         totalBill: 'کل بل',
         orderWhatsapp: 'واٹس ایپ پر آرڈر کریں',
+        addedToCart: 'کارٹ میں شامل ہو گیا!',
+        removedFromCart: 'کارٹ سے ہٹا دیا گیا',
+        cartCleared: 'کارٹ صاف ہو گیا',
 
-        // Profile & Setting Detail
+        // Favorites
+        favoritesTitle: 'پسندیدہ',
+        noFavoritesTitle: 'کوئی پسندیدہ آئٹم نہیں',
+        noFavoritesSubtitle: 'کسی بھی پروڈکٹ پر اسٹار آئیکن دبائیں تاکہ اسے یہاں محفوظ کریں۔',
+        browseMenu: 'مینیو دیکھیں',
+        addedToFavorites: 'پسندیدہ میں شامل کر دیا گیا!',
+        removedFromFavorites: 'پسندیدہ سے ہٹا دیا گیا',
+
+        // Profile
         accountOverview: 'اکاؤنٹ کی تفصیلات',
         myOrders: 'میرے آرڈرز',
         paymentMethods: 'ادائیگی کے طریقے',
@@ -130,6 +203,26 @@ export const translations = {
         support: 'سپورٹ',
         logout: 'لاگ آؤٹ',
         changeLanguage: 'زبان تبدیل کریں',
+        valuedCustomer: 'بہترین کسٹمر',
+        alNoorCustomer: 'النور کسٹمر',
+        editProfile: 'پروفائل تبدیل کریں',
+        fullName: 'پورا نام',
+        phoneNumber: 'فون نمبر',
+        enterName: 'اپنا نام لکھیں',
+        enterPhone: 'فون نمبر لکھیں',
+        saveChanges: 'سیو کریں',
+        profileUpdated: 'پروفائل اپ ڈیٹ کر دی گئی ہے',
+        loggedOut: 'لاگ آؤٹ ہو گیا',
+        qualityTaste: 'بہترین معیار اور ذائقہ',
+
+        // Account Deletion
+        deleteAccount: 'اکاؤنٹ ڈیلیٹ کریں',
+        deleteAccountTitle: 'اکاؤنٹ ڈیلیٹ کریں؟',
+        deleteAccountDesc: 'کیا آپ واقعی اپنا اکاؤنٹ ڈیلیٹ کرنا چاہتے ہیں؟ یہ عمل واپس نہیں لیا جا سکتا اور آپ کا سارا ڈیٹا ختم ہو جائے گا۔',
+        deleteConfirm: 'ڈیلیٹ کریں',
+        accountDeleted: 'اکاؤنٹ ڈیلیٹ کر دیا گیا ہے',
+        deleteError: 'اکاؤنٹ ڈیلیٹ کرنے میں خرابی',
+        reLoginRequired: 'سیکیورٹی کے لیے دوبارہ لاگ ان کر کے ٹرائی کریں',
 
         // Detailed Sections
         orderNo: 'آرڈر نمبر',
@@ -152,5 +245,14 @@ export const translations = {
         editAddress: 'پتہ تبدیل کریں',
         addressTitlePlaceholder: 'عنوان (مثلاً گھر، دفتر)',
         addressDetailsPlaceholder: 'پتے کی مکمل تفصیلات...',
+
+        // Product Details
+        addToCartBtn: 'کارٹ میں شامل کریں',
+        description: 'تفصیل',
+        price: 'قیمت',
+        alreadyInCart: 'پہلے سے کارٹ میں ہے',
+
+        // Developer
+        viewPortfolio: 'پورٹ فولیو دیکھیں',
     }
 };

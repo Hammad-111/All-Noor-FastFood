@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { auth, db } from '../utils/firebaseConfig';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { onAuthStateChanged, signOut, deleteUser } from 'firebase/auth';
+import { doc, getDoc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
 
 const AuthContext = createContext();
 
@@ -14,13 +14,11 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         let unsubscribeSnapshot = null;
 
-        // Safety switch: Force loading to end
         const safetyTimer = setTimeout(() => {
             if (loading) setLoading(false);
         }, 8000);
 
         const unsubscribeAuth = onAuthStateChanged(auth, async (currUser) => {
-            // Clean up previous snapshot listener if exists
             if (unsubscribeSnapshot) unsubscribeSnapshot();
 
             if (currUser) {
@@ -28,13 +26,10 @@ export const AuthProvider = ({ children }) => {
                 setIsAdmin(currUser.email === 'admin@alnoor.com');
                 const userDocRef = doc(db, 'users', currUser.uid);
 
-                // Real-time listener for user data
                 unsubscribeSnapshot = onSnapshot(userDocRef, (snapshot) => {
                     if (snapshot.exists()) {
                         setUserData(snapshot.data());
                     } else {
-                        // Document doesn't exist yet, handle it
-                        // But don't overwrite here to avoid race conditions with LoginScreen's setDoc
                         setUserData({
                             email: currUser.email || '',
                             phoneNumber: currUser.phoneNumber || '',
@@ -83,6 +78,19 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const deleteAccount = async () => {
+        if (!auth.currentUser) return;
+        try {
+            // 1. Delete Firestore data first
+            await deleteDoc(doc(db, 'users', auth.currentUser.uid));
+            // 2. Delete Auth user
+            await deleteUser(auth.currentUser);
+        } catch (error) {
+            console.error("Delete Account Error:", error);
+            throw error;
+        }
+    };
+
     return (
         <AuthContext.Provider value={{
             user,
@@ -90,7 +98,8 @@ export const AuthProvider = ({ children }) => {
             isAdmin,
             loading,
             logout,
-            refreshUserData
+            refreshUserData,
+            deleteAccount
         }}>
             {children}
         </AuthContext.Provider>

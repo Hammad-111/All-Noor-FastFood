@@ -128,50 +128,50 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     toastWrapper: {
-        width: width * 0.9,
-        borderRadius: 20,
-        borderWidth: 1.5,
+        width: width * 0.75, // Narrower
+        borderRadius: 25, // More rounded/capsule
+        borderWidth: 1,
         overflow: 'hidden',
-        elevation: 15,
+        elevation: 10,
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.4,
-        shadowRadius: 15,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
     },
     blurContainer: {
-        paddingVertical: 14,
-        paddingHorizontal: 18,
-        backgroundColor: 'rgba(20, 20, 25, 0.7)',
+        paddingVertical: 8, // More compact
+        paddingHorizontal: 15,
+        backgroundColor: 'rgba(15, 23, 42, 0.8)', // Sleeker dark slate
     },
     content: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     iconBadge: {
-        width: 32,
-        height: 32,
-        borderRadius: 10,
+        width: 26, // Smaller icon container
+        height: 26,
+        borderRadius: 8,
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 12,
+        marginRight: 10,
     },
     icon: {
-        fontSize: 16,
+        fontSize: 14, // Smaller emoji
     },
     message: {
         color: '#FFF',
-        fontSize: 15,
-        fontWeight: '600',
+        fontSize: 13, // Smaller, sharper text
+        fontWeight: '500',
         flex: 1,
-        letterSpacing: 0.3,
+        letterSpacing: 0.2,
     },
     progressBarContainer: {
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
-        height: 3.5,
-        backgroundColor: 'rgba(255,255,255,0.05)',
+        height: 2.5, // Thinner line
+        backgroundColor: 'rgba(255,255,255,0.03)',
     },
     progressBar: {
         height: '100%',

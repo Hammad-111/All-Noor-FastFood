@@ -1,22 +1,32 @@
-
 import React from 'react';
-
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Animated, Image, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Animated, Image, Platform, Alert, Modal, ActivityIndicator, TextInput, KeyboardAvoidingView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-
 import SplitScreen from '../components/SplitScreen';
 import { COLORS, SIZES } from '../constants/theme';
 import { useNavigation } from '@react-navigation/native';
 import { useLanguage } from '../context/LanguageContext';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { db } from '../utils/firebaseConfig';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons as Icon } from '@expo/vector-icons';
+import { doc, setDoc } from 'firebase/firestore';
+import { BlurView } from 'expo-blur';
 
 const ProfileScreen = () => {
+    const insets = useSafeAreaInsets();
     const navigation = useNavigation();
     const { t, toggleLanguage, language } = useLanguage();
-    const { user, userData, logout } = useAuth();
+    const { user, userData, logout, deleteAccount } = useAuth();
     const { showToast } = useToast();
+    const [deleteModalVisible, setDeleteModalVisible] = React.useState(false);
+    const [deleting, setDeleting] = React.useState(false);
+
+    // Edit Profile States
+    const [editModalVisible, setEditModalVisible] = React.useState(false);
+    const [editName, setEditName] = React.useState(userData?.name || '');
+    const [editPhone, setEditPhone] = React.useState(userData?.phoneNumber || '');
+    const [savingProfile, setSavingProfile] = React.useState(false);
 
     const handleLanguageToggle = () => {
         toggleLanguage();
@@ -26,7 +36,52 @@ const ProfileScreen = () => {
 
     const handleLogout = () => {
         logout();
-        showToast(language === 'ur' ? "لاگ آؤٹ ہو گیا" : "Logged out successfully", 'info');
+        showToast(t('loggedOut'), 'info');
+    };
+
+    const handleSaveProfile = async () => {
+        if (!user) return;
+        try {
+            setSavingProfile(true);
+            const userDocRef = doc(db, 'users', user.uid);
+            await setDoc(userDocRef, {
+                name: editName,
+                phoneNumber: editPhone,
+                updatedAt: new Date().toISOString()
+            }, { merge: true });
+
+            showToast(t('profileUpdated'), 'success');
+            setEditModalVisible(false);
+        } catch (error) {
+            console.error("Save profile error:", error);
+            showToast(t('errorOccurred'), 'error');
+        } finally {
+            setSavingProfile(false);
+        }
+    };
+
+    const handleEditProfile = () => {
+        setEditName(userData?.name || '');
+        setEditPhone(userData?.phoneNumber || '');
+        setEditModalVisible(true);
+    };
+
+    const handleDeleteAccount = async () => {
+        try {
+            setDeleting(true);
+            await deleteAccount();
+            setDeleteModalVisible(false);
+            showToast(t('accountDeleted'), 'success');
+        } catch (error) {
+            console.error("Delete account error:", error);
+            if (error.code === 'auth/requires-recent-login') {
+                showToast(t('reLoginRequired'), 'error');
+            } else {
+                showToast(t('deleteError'), 'error');
+            }
+        } finally {
+            setDeleting(false);
+        }
     };
 
     const menuItems = [
@@ -92,7 +147,7 @@ const ProfileScreen = () => {
     return (
         <View style={styles.main}>
             <SplitScreen ratio={0.33}>
-                <SafeAreaView style={styles.container} edges={['top']}>
+                <View style={[styles.container, { paddingTop: insets.top }]}>
                     {/* Header Section */}
                     <View style={styles.header}>
                         <Animated.View
@@ -123,9 +178,16 @@ const ProfileScreen = () => {
                                 </View>
                             </View>
                         </Animated.View>
-                        <Text style={styles.userName}>{userData?.name || (user ? (language === 'ur' ? 'النور کسٹمر' : 'Al Noor Customer') : t('appName'))}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Text style={styles.userName}>{userData?.name || (user ? t('alNoorCustomer') : t('appName'))}</Text>
+                            {user && (
+                                <TouchableOpacity onPress={handleEditProfile} style={{ marginLeft: 8 }}>
+                                    <Icon name="pencil" size={16} color={COLORS.accent} />
+                                </TouchableOpacity>
+                            )}
+                        </View>
                         <View style={styles.badgeContainer}>
-                            <Text style={styles.userBadge}>{user ? (language === 'ur' ? 'بہترین کسٹمر' : 'VALUED CUSTOMER') : (language === 'ur' ? 'بہترین معیار اور ذائقہ' : 'QUALITY & TASTE')}</Text>
+                            <Text style={styles.userBadge}>{user ? t('valuedCustomer') : t('qualityTaste')}</Text>
                         </View>
                     </View>
 
@@ -135,6 +197,7 @@ const ProfileScreen = () => {
                             showsVerticalScrollIndicator={false}
                             contentContainerStyle={styles.scrollContent}
                         >
+
                             <Animated.View
                                 style={{
                                     opacity: fadeAnim,
@@ -171,15 +234,150 @@ const ProfileScreen = () => {
                             ))}
 
 
+                            {/* Developer Credits - Professional Method */}
+                            <TouchableOpacity
+                                activeOpacity={0.9}
+                                style={styles.devCardWrapper}
+                                onPress={() => navigation.navigate('DeveloperPortfolio')}
+                            >
+                                <LinearGradient
+                                    colors={['rgba(255, 215, 0, 0.05)', 'rgba(255, 215, 0, 0.1)']}
+                                    style={styles.devCard}
+                                >
+                                    <View style={styles.devHeader}>
+                                        <View style={styles.devIconBox}>
+                                            <Image
+                                                source={require('../../assets/Developer.jpeg')}
+                                                style={styles.devAvatarSmall}
+                                                resizeMode="cover"
+                                            />
+                                        </View>
+                                        <View>
+                                            <Text style={styles.devName}>Hammad Javed</Text>
+                                            <Text style={styles.devRole}>Software Engineer</Text>
+                                        </View>
+                                    </View>
+
+                                    <View style={styles.devBadgeContainer}>
+                                        <Text style={styles.devBadgeText}>DEVELOPER</Text>
+                                    </View>
+
+                                    <View style={styles.devClickHint}>
+                                        <Text style={styles.devClickText}>{language === 'ur' ? 'پورٹ فولیو دیکھیں' : 'VIEW PORTFOLIO'}</Text>
+                                        <Icon name="chevron-forward" size={12} color={COLORS.accent} />
+                                    </View>
+                                </LinearGradient>
+                            </TouchableOpacity>
+
                             <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
                                 <Text style={styles.logoutText}>{t('logout')}</Text>
                             </TouchableOpacity>
 
-                            {/* Extra space for floating tabs */}
+                            <TouchableOpacity
+                                style={{ marginTop: 20, alignSelf: 'center', padding: 10 }}
+                                onPress={() => setDeleteModalVisible(true)}
+                            >
+                                <Text style={{ color: 'rgba(255, 82, 82, 0.6)', fontSize: 13, textDecorationLine: 'underline' }}>
+                                    {t('deleteAccount')}
+                                </Text>
+                            </TouchableOpacity>
+
+
+                            {/* Edit Profile Modal */}
+                            <Modal transparent visible={editModalVisible} animationType="slide">
+                                <KeyboardAvoidingView
+                                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                                    style={styles.modalOverlay}
+                                >
+                                    <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
+                                    <View style={styles.editModalContent}>
+                                        <Text style={styles.editModalTitle}>{t('editProfile')}</Text>
+
+                                        <View style={styles.inputGroup}>
+                                            <Text style={styles.inputLabel}>{t('fullName')}</Text>
+                                            <TextInput
+                                                style={styles.editInput}
+                                                value={editName}
+                                                onChangeText={setEditName}
+                                                placeholder={t('enterName')}
+                                                placeholderTextColor="rgba(255,255,255,0.3)"
+                                            />
+                                        </View>
+
+                                        <View style={styles.inputGroup}>
+                                            <Text style={styles.inputLabel}>{t('phoneNumber')}</Text>
+                                            <TextInput
+                                                style={styles.editInput}
+                                                value={editPhone}
+                                                onChangeText={setEditPhone}
+                                                placeholder={t('enterPhone')}
+                                                placeholderTextColor="rgba(255,255,255,0.3)"
+                                                keyboardType="phone-pad"
+                                            />
+                                        </View>
+
+                                        <View style={[styles.modalButtonsRow, { marginTop: 10 }]}>
+                                            <TouchableOpacity
+                                                style={styles.modalCancelBtn}
+                                                onPress={() => setEditModalVisible(false)}
+                                                disabled={savingProfile}
+                                            >
+                                                <Text style={styles.modalCancelText}>{t('cancel')}</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                style={styles.modalSaveBtn}
+                                                onPress={handleSaveProfile}
+                                                disabled={savingProfile}
+                                            >
+                                                {savingProfile ? (
+                                                    <ActivityIndicator color="white" size="small" />
+                                                ) : (
+                                                    <Text style={styles.modalSaveText}>{t('saveChanges')}</Text>
+                                                )}
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                </KeyboardAvoidingView>
+                            </Modal>
+
+                            {/* Delete Account Modal */}
+                            <Modal transparent visible={deleteModalVisible} animationType="fade">
+                                <View style={styles.modalOverlay}>
+                                    <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+                                    <Animated.View style={styles.deleteModalContent}>
+                                        <View style={styles.warningIconContainer}>
+                                            <Icon name="warning" size={40} color="#FF5252" />
+                                        </View>
+                                        <Text style={styles.deleteModalTitle}>{t('deleteAccountTitle')}</Text>
+                                        <Text style={styles.deleteModalDescription}>{t('deleteAccountDesc')}</Text>
+                                        <View style={styles.modalButtonsRow}>
+                                            <TouchableOpacity
+                                                style={styles.modalCancelBtn}
+                                                onPress={() => setDeleteModalVisible(false)}
+                                                disabled={deleting}
+                                            >
+                                                <Text style={styles.modalCancelText}>{t('cancel')}</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                style={styles.modalDeleteBtn}
+                                                onPress={handleDeleteAccount}
+                                                disabled={deleting}
+                                            >
+                                                {deleting ? (
+                                                    <ActivityIndicator color="white" size="small" />
+                                                ) : (
+                                                    <Text style={styles.modalDeleteText}>{t('deleteConfirm')}</Text>
+                                                )}
+                                            </TouchableOpacity>
+                                        </View>
+                                    </Animated.View>
+                                </View>
+                            </Modal>
+
                             <View style={{ height: 120 }} />
                         </ScrollView>
                     </View>
-                </SafeAreaView>
+                </View>
             </SplitScreen>
         </View>
     );
@@ -189,10 +387,10 @@ const styles = StyleSheet.create({
     main: { flex: 1 },
     container: { flex: 1 },
     header: {
-        height: '35%',
         justifyContent: 'center',
         alignItems: 'center',
-        paddingTop: 20,
+        paddingTop: 10,
+        paddingBottom: 20,
     },
     profileAvatarContainer: {
         width: 120,
@@ -228,10 +426,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         overflow: 'hidden',
-        elevation: 15,
-        shadowColor: COLORS.accent,
-        shadowOpacity: 0.4,
-        shadowRadius: 15,
+        elevation: 5,
+        shadowColor: COLORS.primary,
+        shadowOpacity: 0.2,
+        shadowRadius: 10,
     },
     avatarImage: {
         width: '100%',
@@ -329,7 +527,229 @@ const styles = StyleSheet.create({
         color: '#FF5252',
         fontWeight: 'bold',
         fontSize: 16,
-    }
+    },
+    // Developer Card Styles
+    devCardWrapper: {
+        marginTop: 40,
+        borderRadius: 25,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 215, 0, 0.2)',
+        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    },
+    devCard: {
+        padding: 20,
+    },
+    devHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    devIconBox: {
+        width: 45,
+        height: 45,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255, 215, 0, 0.1)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 15,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+    },
+    devAvatarSmall: {
+        width: '100%',
+        height: '100%',
+    },
+    devName: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: COLORS.secondary,
+    },
+    devRole: {
+        fontSize: 13,
+        color: COLORS.accent,
+        fontWeight: '600',
+        letterSpacing: 0.5,
+    },
+    devDivider: {
+        height: 1,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        marginBottom: 15,
+    },
+    devInfoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    devInfoText: {
+        fontSize: 13,
+        color: 'rgba(255, 255, 255, 0.7)',
+        marginLeft: 10,
+    },
+    devBadgeContainer: {
+        position: 'absolute',
+        top: 20,
+        right: 15,
+        backgroundColor: 'rgba(255, 215, 0, 0.1)',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
+    },
+    devBadgeText: {
+        fontSize: 8,
+        fontWeight: '900',
+        color: COLORS.accent,
+        letterSpacing: 1,
+    },
+    devClickHint: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        marginTop: 10,
+    },
+    devClickText: {
+        fontSize: 10,
+        fontWeight: 'bold',
+        color: COLORS.accent,
+        marginRight: 5,
+        letterSpacing: 1,
+    },
+    // Custom Modal Styles
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+    },
+    deleteModalContent: {
+        width: '90%',
+        backgroundColor: '#1E293B',
+        borderRadius: 30,
+        padding: 25,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 15,
+        elevation: 10,
+    },
+    warningIconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: 'rgba(255, 82, 82, 0.1)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    deleteModalTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: COLORS.secondary,
+        textAlign: 'center',
+        marginBottom: 10,
+    },
+    deleteModalDescription: {
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.6)',
+        textAlign: 'center',
+        lineHeight: 22,
+        marginBottom: 30,
+    },
+    modalButtonsRow: {
+        flexDirection: 'row',
+        gap: 15,
+        width: '100%',
+    },
+    modalCancelBtn: {
+        flex: 1,
+        paddingVertical: 15,
+        borderRadius: 15,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    modalCancelText: {
+        color: COLORS.secondary,
+        fontWeight: '600',
+    },
+    modalDeleteBtn: {
+        flex: 1,
+        paddingVertical: 15,
+        borderRadius: 15,
+        backgroundColor: '#FF5252',
+        alignItems: 'center',
+        shadowColor: "#FF5252",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+        elevation: 5,
+    },
+    modalDeleteText: {
+        color: 'white',
+        fontWeight: 'bold',
+    },
+    // Edit Modal Specifics
+    editModalContent: {
+        width: '90%',
+        backgroundColor: '#1E293B',
+        borderRadius: 30,
+        padding: 25,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 15,
+        elevation: 10,
+    },
+    editModalTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: COLORS.secondary,
+        marginBottom: 25,
+        textAlign: 'center',
+    },
+    inputGroup: {
+        marginBottom: 20,
+    },
+    inputLabel: {
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.6)',
+        marginBottom: 8,
+        marginLeft: 4,
+    },
+    editInput: {
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 15,
+        paddingHorizontal: 15,
+        paddingVertical: 12,
+        color: 'white',
+        fontSize: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    modalSaveBtn: {
+        flex: 1,
+        paddingVertical: 15,
+        borderRadius: 15,
+        backgroundColor: COLORS.accent,
+        alignItems: 'center',
+        shadowColor: COLORS.accent,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+        elevation: 5,
+    },
+    modalSaveText: {
+        color: 'black',
+        fontWeight: 'bold',
+    },
 });
 
 export default ProfileScreen;

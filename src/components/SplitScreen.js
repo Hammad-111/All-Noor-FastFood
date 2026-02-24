@@ -17,8 +17,9 @@ const SplitScreen = ({ children, ratio = 0.35 }) => {
                 end={{ x: 1, y: 1 }}
                 style={[styles.topHalf, { height: height * ratio }]}
             />
-            <View style={[styles.bottomHalf, { top: height * ratio }]}>
-                <WaveDivider />
+            <View style={[styles.bottomHalf, { top: height * ratio }]} />
+            <View style={styles.dividerContainer}>
+                <WaveDivider customTop={height * ratio - 40} />
             </View>
 
             <View style={styles.content}>
@@ -42,11 +43,18 @@ const styles = StyleSheet.create({
     },
     bottomHalf: {
         position: 'absolute',
+        top: 0,
         left: 0,
         right: 0,
         bottom: 0,
         backgroundColor: COLORS.background,
-        zIndex: 0,
+        zIndex: -1,
+    },
+    dividerContainer: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        zIndex: 1,
     },
     content: {
         flex: 1,
