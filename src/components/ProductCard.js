@@ -2,12 +2,23 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Image, Animated, StyleSheet, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { getImage } from '../utils/imageMap';
 import { useLanguage } from '../context/LanguageContext';
+import { useCart } from '../context/CartContext';
+import { Ionicons as Icon } from '@expo/vector-icons';
 
-const ProductCard = ({ item, index, navigation, addToCart, isAdmin, onEditPrice }) => {
+const getDealCode = (item) => {
+    const number = item.name?.match(/\d+/)?.[0] || item.id?.match(/\d+/)?.[0];
+    return number ? `D-${number.padStart(2, '0')}` : 'DEAL';
+};
+
+const ProductCard = ({ item, index, addToCart, isAdmin, onEditPrice, onDelete }) => {
+    const { colors } = useTheme();
+    const styles = React.useMemo(() => createStyles(colors), [colors]);
     const { t } = useLanguage();
+    const { toggleFavorite, isFavorite } = useCart();
+    const favorite = isFavorite(item.id);
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
     const translateY = React.useRef(new Animated.Value(50)).current;
     const rotationAnim = React.useRef(new Animated.Value(0)).current;
@@ -33,7 +44,7 @@ const ProductCard = ({ item, index, navigation, addToCart, isAdmin, onEditPrice 
             Animated.timing(rotationAnim, {
                 toValue: 1,
                 duration: 3000,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             })
         ).start();
     }, [index]);
@@ -48,18 +59,14 @@ const ProductCard = ({ item, index, navigation, addToCart, isAdmin, onEditPrice 
 
     return (
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY }] }}>
-            <TouchableOpacity
-                style={styles.productCardWrapper}
-                onPress={() => navigation.navigate('ProductDetails', { product: item })}
-                activeOpacity={0.8}
-            >
+            <View style={styles.productCardWrapper}>
                 <View style={styles.animatedBorderContainer}>
                     <Animated.View style={[
                         styles.rotatingGradientContainer,
                         { transform: [{ rotate: spin }] }
                     ]}>
                         <LinearGradient
-                            colors={['transparent', COLORS.accent, 'transparent', COLORS.primary, 'transparent']}
+                            colors={['transparent', colors.accent, 'transparent', colors.primary, 'transparent']}
                             start={{ x: 0, y: 0.5 }}
                             end={{ x: 1, y: 0.5 }}
                             style={styles.gradientLine}
@@ -67,61 +74,109 @@ const ProductCard = ({ item, index, navigation, addToCart, isAdmin, onEditPrice 
                     </Animated.View>
                     <BlurView intensity={70} tint="dark" style={styles.productCard}>
                         <View style={styles.imageWrapper}>
-                            {item.isSpecialDeal ? (
-                                <View style={styles.dealIconWrapper}>
-                                    <Text style={styles.dealIconLetter}>
-                                        {item.name ? item.name.charAt(0).toUpperCase() : 'D'}
+                            {item.category === 'Deals' ? (
+                                <LinearGradient
+                                    colors={['rgba(255, 215, 0, 0.18)', 'rgba(255, 215, 0, 0.04)']}
+                                    style={styles.dealProfessionalBadge}
+                                >
+                                    <Icon name="pricetag-outline" size={21} color={colors.accent} />
+                                    <Text style={styles.dealBadgeLabel}>SPECIAL</Text>
+                                    <Text style={styles.dealBadgeCode}>{getDealCode(item)}</Text>
+                                </LinearGradient>
+                            ) : item.isSpecialDeal || item.isDynamic || !item.imageKey ? (
+                                <View style={[styles.dealIconWrapper, item.isDynamic && { backgroundColor: colors.accent }]}>
+                                    <Text style={[styles.dealIconLetter, item.isDynamic && { color: colors.secondary }]}>
+                                        {item.name ? item.name.charAt(0).toUpperCase() : 'P'}
                                     </Text>
                                 </View>
                             ) : (
                                 <Image
-                                    source={getImage(item.id, item.category)}
+                                    source={getImage(item.imageKey || item.id, item.category)}
                                     style={styles.productImage}
                                     resizeMode="contain"
                                 />
                             )}
                         </View>
                         <View style={styles.productInfo}>
-                            <Text style={styles.productName}>{item.name}</Text>
+                            <View style={styles.titleRow}>
+                                <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.favoriteButton,
+                                        favorite && styles.favoriteButtonActive
+                                    ]}
+                                    onPress={() => toggleFavorite(item)}
+                                    activeOpacity={0.7}
+                                    accessibilityLabel={favorite ? 'Remove from favorites' : 'Add to favorites'}
+                                >
+                                    <Icon
+                                        name={favorite ? 'heart' : 'heart-outline'}
+                                        size={19}
+                                        color={favorite ? '#FF4D67' : colors.textLight}
+                                    />
+                                </TouchableOpacity>
+                            </View>
                             <Text style={styles.productDesc} numberOfLines={1}>{item.description}</Text>
                             <View style={styles.priceRow}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                     <View style={styles.priceBadge}>
+                                        {item.sizes && <Text style={styles.fromText}>{t('from')} </Text>}
                                         <Text style={styles.currencyText}>{t('rs')}</Text>
-                                        <Text style={styles.productPrice}>{item.price}</Text>
+                                        <Text style={styles.productPrice}>{item.sizes ? item.sizes[0].price : item.price}</Text>
                                     </View>
-                                    {isAdmin && !item.isSpecialDeal && (
-                                        <TouchableOpacity onPress={() => onEditPrice(item)} style={{ marginLeft: 10 }}>
-                                            <Text style={{ color: COLORS.primary, fontSize: 13, textDecorationLine: 'underline' }}>Edit</Text>
-                                        </TouchableOpacity>
+                                    {isAdmin && (
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 10 }}>
+                                            {!item.isSpecialDeal && (
+                                                <TouchableOpacity onPress={() => onEditPrice(item)} style={{ marginRight: 8 }}>
+                                                    <Text style={{ color: colors.primary, fontSize: 13, textDecorationLine: 'underline' }}>Edit</Text>
+                                                </TouchableOpacity>
+                                            )}
+                                            {(item.isDynamic || item.isSpecialDeal) && (
+                                                <TouchableOpacity onPress={() => onDelete(item)}>
+                                                    <Text style={{ color: '#FF5252', fontSize: 13, textDecorationLine: 'underline' }}>Delete</Text>
+                                                </TouchableOpacity>
+                                            )}
+                                        </View>
                                     )}
                                 </View>
                                 <TouchableOpacity
                                     style={styles.addButton}
                                     onPress={() => addToCart(item)}
                                 >
-                                    <Text style={styles.addButtonText}>+</Text>
+                                    <Text style={[styles.addButtonText, item.sizes && { fontSize: 13, letterSpacing: 0.5 }]}>
+                                        {item.sizes ? t('selectSize') : '+'}
+                                    </Text>
                                 </TouchableOpacity>
                             </View>
+
                         </View>
                     </BlurView>
                 </View>
-            </TouchableOpacity>
+            </View>
         </Animated.View>
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     productCardWrapper: {
         marginBottom: 18,
         borderRadius: 20,
         overflow: 'hidden',
-        // Glassmorphism soft glowing shadow
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.15,
-        shadowRadius: 20,
-        elevation: 10,
+        // Glassmorphism soft glowing shadow - platform aware
+        ...Platform.select({
+            ios: {
+                shadowColor: colors.primary,
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.15,
+                shadowRadius: 20,
+            },
+            android: {
+                elevation: 10,
+            },
+            web: {
+                boxShadow: `0px 10px 20px ${colors.primary}26` // 26 is ~15% opacity
+            }
+        })
     },
     animatedBorderContainer: {
         borderRadius: 20,
@@ -143,7 +198,7 @@ const styles = StyleSheet.create({
         height: '200%',
     },
     productCard: {
-        backgroundColor: COLORS.glass,
+        backgroundColor: colors.glass,
         padding: 12,
         flexDirection: 'row',
         alignItems: 'center',
@@ -165,33 +220,86 @@ const styles = StyleSheet.create({
         width: 70,
         height: 70,
         borderRadius: 25,
-        backgroundColor: COLORS.primary,
+        backgroundColor: colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
-        elevation: 5,
+        ...Platform.select({
+            ios: {
+                shadowColor: colors.primary,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 5,
+            },
+            android: {
+                elevation: 5,
+            },
+            web: {
+                boxShadow: `0px 4px 5px ${colors.primary}4D` // 4D is ~30% opacity
+            }
+        })
     },
     dealIconLetter: {
         fontSize: 35,
         fontWeight: '900',
-        color: COLORS.secondary,
+        color: colors.secondary,
         fontStyle: 'italic',
+    },
+    dealProfessionalBadge: {
+        width: 72,
+        height: 72,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 215, 0, 0.35)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    dealBadgeLabel: {
+        color: colors.textLight,
+        fontSize: 8,
+        fontWeight: '700',
+        letterSpacing: 1.2,
+        marginTop: 3,
+    },
+    dealBadgeCode: {
+        color: colors.accent,
+        fontSize: 13,
+        fontWeight: '900',
+        letterSpacing: 0.8,
+        textAlign: 'center',
     },
     productInfo: {
         flex: 1,
         marginLeft: 15,
     },
+    titleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
     productName: {
+        flex: 1,
         fontSize: 17,
         fontWeight: 'bold',
-        color: COLORS.textDark, // this is now light grey
+        color: colors.textDark, // this is now light grey
+    },
+    favoriteButton: {
+        width: 32,
+        height: 32,
+        marginLeft: 6,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 16,
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.12)',
+    },
+    favoriteButtonActive: {
+        backgroundColor: 'rgba(255, 77, 103, 0.14)',
+        borderColor: 'rgba(255, 77, 103, 0.35)',
     },
     productDesc: {
         fontSize: 13,
-        color: COLORS.textLight,
+        color: colors.textLight,
         marginVertical: 4,
     },
     priceRow: {
@@ -199,6 +307,8 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginTop: 5,
+        gap: 8,
+        paddingRight: 5,
     },
     priceBadge: {
         flexDirection: 'row',
@@ -210,9 +320,17 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: 'rgba(255, 215, 0, 0.3)',
     },
+    fromText: {
+        fontSize: 10,
+        color: colors.accent,
+        fontWeight: '400',
+        marginRight: 2,
+        opacity: 0.6,
+    },
     currencyText: {
+
         fontSize: 12,
-        color: COLORS.accent,
+        color: colors.accent,
         fontWeight: '600',
         marginRight: 4,
         opacity: 0.8,
@@ -220,19 +338,29 @@ const styles = StyleSheet.create({
     productPrice: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: COLORS.accent,
-        textShadowColor: 'rgba(255, 215, 0, 0.4)',
-        textShadowOffset: { width: 0, height: 2 },
-        textShadowRadius: 4,
+        color: colors.accent,
+        ...Platform.select({
+            ios: {
+                textShadowColor: 'rgba(255, 215, 0, 0.4)',
+                textShadowOffset: { width: 0, height: 2 },
+                textShadowRadius: 4,
+            },
+            android: {
+                elevation: 0, // Text shadow not supported on Android naturally
+            },
+            web: {
+                textShadow: '0px 2px 4px rgba(255, 215, 0, 0.4)'
+            }
+        })
     },
     addButton: {
-        backgroundColor: COLORS.primary,
+        backgroundColor: colors.primary,
         paddingHorizontal: 15,
         paddingVertical: 6,
         borderRadius: 10,
     },
     addButtonText: {
-        color: COLORS.secondary,
+        color: colors.secondary,
         fontSize: 18,
         fontWeight: 'bold',
     },

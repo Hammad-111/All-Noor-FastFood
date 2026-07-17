@@ -1,10 +1,12 @@
 import React, { useRef } from 'react';
 import { TouchableOpacity, StyleSheet, Animated, Platform } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 
-const BackButton = ({ color = COLORS.secondary, style }) => {
+const BackButton = ({ color, style }) => {
+    const { colors } = useTheme();
+    const styles = React.useMemo(() => createStyles(colors), [colors]);
     const navigation = useNavigation();
     const scale = useRef(new Animated.Value(1)).current;
 
@@ -36,7 +38,7 @@ const BackButton = ({ color = COLORS.secondary, style }) => {
                 <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                     <Path
                         d="M15 18L9 12L15 6"
-                        stroke={color}
+                        stroke={color || colors.secondary}
                         strokeWidth="2.5"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -47,7 +49,7 @@ const BackButton = ({ color = COLORS.secondary, style }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     container: {
         width: 42,
         height: 42,

@@ -1,21 +1,32 @@
 import React from 'react';
 
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons as Icon } from '@expo/vector-icons';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS } from '../constants/theme';
 import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 
-const { width } = Dimensions.get('window');
+const getTabIcon = (routeName, isFocused) => {
+    const icons = {
+        HomeTab: isFocused ? 'home' : 'home-outline',
+        FavoritesTab: isFocused ? 'heart' : 'heart-outline',
+        CartTab: isFocused ? 'bag-handle' : 'bag-handle-outline',
+        ProfileTab: isFocused ? 'person' : 'person-outline',
+    };
+    return icons[routeName] || 'ellipse-outline';
+};
 
-const TabItem = ({ route, options, isFocused, onPress, getIcon }) => {
-    const scaleAnim = React.useRef(new Animated.Value(isFocused ? 1.2 : 1)).current;
+const TabItem = ({ route, options, isFocused, onPress }) => {
+    const { colors } = useTheme();
+    const styles = React.useMemo(() => createStyles(colors), [colors]);
+    const scaleAnim = React.useRef(new Animated.Value(isFocused ? 1.08 : 1)).current;
 
     React.useEffect(() => {
         Animated.spring(scaleAnim, {
-            toValue: isFocused ? 1.2 : 1,
+            toValue: isFocused ? 1.08 : 1,
             useNativeDriver: Platform.OS !== 'web',
             friction: 8,
             tension: 40,
@@ -34,6 +45,8 @@ const TabItem = ({ route, options, isFocused, onPress, getIcon }) => {
             onPress={onPress}
             style={styles.tabItem}
             activeOpacity={1}
+            accessibilityRole="button"
+            accessibilityState={{ selected: isFocused }}
         >
             <Animated.View
                 style={[
@@ -41,18 +54,21 @@ const TabItem = ({ route, options, isFocused, onPress, getIcon }) => {
                     { transform: [{ scale: scaleAnim }] }
                 ]}
             >
-                <Text style={[
-                    styles.icon,
-                    { color: isFocused ? COLORS.secondary : 'rgba(255,255,255,0.4)' }
-                ]}>
-                    {getIcon(route.name)}
-                </Text>
+                <Icon
+                    name={getTabIcon(route.name, isFocused)}
+                    size={21}
+                    color={isFocused ? colors.accent : colors.muted}
+                />
             </Animated.View>
-            {isFocused && (
-                <Text style={styles.label}>
-                    {label}
-                </Text>
-            )}
+            <Text
+                style={[
+                    styles.label,
+                    { color: isFocused ? colors.accent : colors.muted }
+                ]}
+                numberOfLines={1}
+            >
+                {label}
+            </Text>
 
             {route.name === 'CartTab' && options.tabBarBadge > 0 && (
                 <View style={styles.badge}>
@@ -64,33 +80,40 @@ const TabItem = ({ route, options, isFocused, onPress, getIcon }) => {
 };
 
 const CustomTabBar = ({ state, descriptors, navigation }) => {
+    const { colors } = useTheme();
+    const styles = React.useMemo(() => createStyles(colors), [colors]);
     const insets = useSafeAreaInsets();
     const translateX = React.useRef(new Animated.Value(0)).current;
     const rotateAnim = React.useRef(new Animated.Value(0)).current;
 
+    const [containerWidth, setContainerWidth] = React.useState(0);
     const tabCount = state.routes.length;
     const paddingHorizontal = 15;
-    const availableWidth = (width - 24) - (paddingHorizontal * 2);
-    const tabWidth = availableWidth / tabCount;
+
+    // Calculate tabWidth based on actual measured container width
+    const tabWidth = containerWidth > 0 ? (containerWidth - (paddingHorizontal * 2)) / tabCount : 0;
+
 
     React.useEffect(() => {
-        // Sliding animation with bouncy spring
         Animated.spring(translateX, {
             toValue: state.index * tabWidth,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
             friction: 7,
             tension: 60,
         }).start();
+    }, [state.index, tabWidth]);
 
-        // Border rotation animation
-        Animated.loop(
+    React.useEffect(() => {
+        const borderAnimation = Animated.loop(
             Animated.timing(rotateAnim, {
                 toValue: 1,
                 duration: 6000,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             })
-        ).start();
-    }, [state.index, tabWidth]);
+        );
+        borderAnimation.start();
+        return () => borderAnimation.stop();
+    }, []);
 
     const spin = rotateAnim.interpolate({
         inputRange: [0, 1],
@@ -99,17 +122,37 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
 
     return (
         <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-            {/* Animated Masterpiece Border Wrapper */}
+            <View
+                pointerEvents="none"
+                style={[styles.bottomScrim, { height: 118 + insets.bottom }]}
+            >
+                <LinearGradient
+                    colors={['transparent', colors.glassDark, colors.background]}
+                    locations={[0, 0.48, 1]}
+                    style={styles.fullSize}
+                />
+            </View>
+
             <View style={styles.tabBarMainWrapper}>
                 <Animated.View style={[styles.rotatingBorder, { transform: [{ rotate: spin }] }]}>
                     <LinearGradient
-                        colors={['transparent', 'rgba(255, 215, 0, 0.25)', 'transparent', 'rgba(255, 255, 255, 0.15)', 'transparent']}
+                        colors={['transparent', `${colors.accent}40`, 'transparent', colors.subtle, 'transparent']}
                         style={styles.fullSize}
                     />
                 </Animated.View>
 
-                <BlurView intensity={95} tint="dark" style={styles.tabBar}>
-                    {/* Sliding Plasma Glow Indicator */}
+                <BlurView
+                    intensity={95}
+                    tint="dark"
+                    style={styles.tabBar}
+                    onLayout={(e) => {
+                        const { width } = e.nativeEvent.layout;
+                        if (width !== containerWidth) {
+                            setContainerWidth(width);
+                        }
+                    }}
+                >
+
                     <Animated.View
                         style={[
                             styles.slidingGlowContainer,
@@ -120,7 +163,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                         ]}
                     >
                         <LinearGradient
-                            colors={['rgba(255, 255, 255, 0.05)', 'rgba(255, 215, 0, 0.18)']}
+                            colors={[colors.subtle, `${colors.accent}2E`]}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={styles.glowGradient}
@@ -144,16 +187,6 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                             }
                         };
 
-                        const getIcon = (name) => {
-                            switch (name) {
-                                case 'HomeTab': return '🏠';
-                                case 'FavoritesTab': return '⭐';
-                                case 'CartTab': return '🛒';
-                                case 'ProfileTab': return '👤';
-                                default: return '❓';
-                            }
-                        };
-
                         return (
                             <TabItem
                                 key={route.key}
@@ -161,7 +194,6 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                                 options={options}
                                 isFocused={isFocused}
                                 onPress={onPress}
-                                getIcon={getIcon}
                             />
                         );
                     })}
@@ -171,7 +203,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     container: {
         position: 'absolute',
         bottom: 0,
@@ -181,17 +213,32 @@ const styles = StyleSheet.create({
         zIndex: 1000,
         paddingHorizontal: 12,
     },
+    bottomScrim: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+    },
     tabBarMainWrapper: {
         width: '100%',
         borderRadius: 35,
         overflow: 'hidden',
         padding: 1.5, // The border thickness
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        elevation: 12,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
+        backgroundColor: colors.subtle,
+        ...Platform.select({
+            ios: {
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.3,
+                shadowRadius: 10,
+            },
+            android: {
+                elevation: 12,
+            },
+            web: {
+                boxShadow: '0px 6px 10px rgba(0,0,0,0.3)'
+            }
+        })
     },
     rotatingBorder: {
         position: 'absolute',
@@ -205,9 +252,9 @@ const styles = StyleSheet.create({
     },
     tabBar: {
         flexDirection: 'row',
-        height: 68,
+        height: 66,
         paddingHorizontal: 15,
-        backgroundColor: 'rgba(10, 15, 30, 0.75)',
+        backgroundColor: colors.glassDark,
         justifyContent: 'space-around',
         alignItems: 'center',
         borderRadius: 33.5, // Slightly smaller than wrapper
@@ -215,23 +262,30 @@ const styles = StyleSheet.create({
     },
     slidingGlowContainer: {
         position: 'absolute',
-        height: 48,
-        top: 10,
+        height: 46,
+        top: 9,
         left: 15,
         borderRadius: 24,
         overflow: 'hidden',
         // Outer plasma glow
-        shadowColor: COLORS.accent,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.3,
-        shadowRadius: 6,
+        ...Platform.select({
+            ios: {
+                shadowColor: colors.accent,
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.3,
+                shadowRadius: 6,
+            },
+            web: {
+                boxShadow: `0px 0px 6px ${colors.accent}4D` // 4D is 30% opacity
+            }
+        }),
     },
     plasmaGlow: {
         position: 'absolute',
         top: 0, left: 0, right: 0, bottom: 0,
         borderRadius: 24,
         borderWidth: 1,
-        borderColor: 'rgba(255, 215, 0, 0.2)',
+        borderColor: `${colors.accent}33`,
     },
     glowGradient: {
         flex: 1,
@@ -245,28 +299,27 @@ const styles = StyleSheet.create({
     iconContainer: {
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    icon: {
-        fontSize: 22,
+        height: 25,
     },
     label: {
-        fontSize: 10,
-        fontWeight: 'bold',
-        color: COLORS.accent,
-        marginTop: 2,
+        maxWidth: '92%',
+        fontSize: 9,
+        fontWeight: '700',
+        marginTop: 1,
+        letterSpacing: 0.2,
     },
     badge: {
         position: 'absolute',
         top: 12,
         right: '20%',
-        backgroundColor: COLORS.accent,
+        backgroundColor: colors.accent,
         borderRadius: 9,
         minWidth: 18,
         height: 18,
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 2,
-        borderColor: '#1E293B',
+        borderColor: colors.surfaceElevated,
     },
     badgeText: {
         color: '#000',

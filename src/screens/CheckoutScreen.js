@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, Linking, Animated } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, Linking, Animated, Platform, Image } from 'react-native';
 import SplitScreen from '../components/SplitScreen';
-import { COLORS, FONTS, SIZES } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useToast } from '../context/ToastContext';
@@ -12,6 +12,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BackButton from '../components/BackButton';
 
 const CheckoutScreen = ({ navigation }) => {
+    const { colors } = useTheme();
+    const styles = React.useMemo(() => createStyles(colors), [colors]);
     const insets = useSafeAreaInsets();
     const { cart, removeFromCart, clearCart, updateQuantity, getDefaultAddress } = useCart();
     const { user } = useAuth();
@@ -35,7 +37,7 @@ const CheckoutScreen = ({ navigation }) => {
     const handlePressIn = () => {
         Animated.spring(btnScale, {
             toValue: 0.95,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
         }).start();
     };
 
@@ -44,13 +46,17 @@ const CheckoutScreen = ({ navigation }) => {
             toValue: 1,
             friction: 3,
             tension: 40,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
         }).start();
     };
 
     const handlePlaceOrder = async () => {
         if (cart.length === 0) {
             showToast("Your cart is empty!", 'error');
+            return;
+        }
+        if (subtotal < 600) {
+            showToast(t('minOrderRequired'), 'error');
             return;
         }
         if (!address) {
@@ -144,27 +150,31 @@ const CheckoutScreen = ({ navigation }) => {
                     <Text style={styles.qtyText}>{item.quantity}x</Text>
                 </View>
                 <View style={styles.itemInfo}>
-                    <Text style={styles.itemName}>{item.name}</Text>
+                    <Text style={styles.itemName}>
+                        {item.name} {item.selectedSize ? `(${t(item.selectedSize.toLowerCase()) || item.selectedSize})` : ''}
+                    </Text>
                     <Text style={styles.itemPrice}>Rs. {item.price * item.quantity}</Text>
                 </View>
+
             </View>
 
             <View style={styles.actions}>
                 <TouchableOpacity
                     style={styles.qtyBtn}
-                    onPress={() => updateQuantity(item.id, item.quantity - 1)}
+                    onPress={() => updateQuantity(item.cartItemId || item.id, item.quantity - 1)}
                 >
                     <Text style={styles.qtyBtnText}>-</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={styles.qtyBtn}
-                    onPress={() => updateQuantity(item.id, item.quantity + 1)}
+                    onPress={() => updateQuantity(item.cartItemId || item.id, item.quantity + 1)}
                 >
                     <Text style={styles.qtyBtnText}>+</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => removeFromCart(item.id)} style={styles.removeBtn}>
+                <TouchableOpacity onPress={() => removeFromCart(item.cartItemId || item.id)} style={styles.removeBtn}>
                     <Text style={styles.removeBtnText}>🗑️</Text>
                 </TouchableOpacity>
+
             </View>
         </View>
     );
@@ -253,7 +263,13 @@ const CheckoutScreen = ({ navigation }) => {
                 <View style={[styles.container, { paddingTop: insets.top }]}>
                     <View style={styles.header}>
                         <BackButton />
-                        <Text style={styles.title}>{t('myCart')}</Text>
+                        <View style={styles.headerTitleContainer}>
+                            <Image
+                                source={require('../../assets/logo.jpeg')}
+                                style={styles.headerLogo}
+                            />
+                            <Text style={styles.title}>{t('myCart')}</Text>
+                        </View>
                         <View style={{ width: 45 }} />
                     </View>
 
@@ -268,7 +284,7 @@ const CheckoutScreen = ({ navigation }) => {
                     <FlatList
                         data={cart}
                         renderItem={renderItem}
-                        keyExtractor={item => item.id}
+                        keyExtractor={item => item.cartItemId || item.id}
                         ListHeaderComponent={
                             cart.length > 0 && (
                                 <View style={styles.listHeader}>
@@ -297,7 +313,7 @@ const CheckoutScreen = ({ navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     mainContainer: { flex: 1 },
     container: { flex: 1 },
     header: {
@@ -316,14 +332,26 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     backBtnText: {
-        color: COLORS.secondary,
+        color: colors.secondary,
         fontSize: 24,
         fontWeight: 'bold',
+    },
+    headerTitleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    headerLogo: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        marginRight: 10,
+        borderWidth: 1,
+        borderColor: colors.accent,
     },
     title: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: COLORS.secondary,
+        color: colors.secondary,
     },
     summaryTop: {
         alignItems: 'center',
@@ -336,7 +364,7 @@ const styles = StyleSheet.create({
     totalValue: {
         fontSize: 36,
         fontWeight: 'bold',
-        color: COLORS.accent,
+        color: colors.accent,
     },
     timeBadge: {
         backgroundColor: 'rgba(255,255,255,0.1)',
@@ -346,7 +374,7 @@ const styles = StyleSheet.create({
         marginTop: 10,
     },
     timeText: {
-        color: COLORS.secondary,
+        color: colors.secondary,
         fontSize: 12,
         fontWeight: '600',
     },
@@ -370,7 +398,7 @@ const styles = StyleSheet.create({
         color: '#666',
     },
     clearBtnText: {
-        color: COLORS.primary,
+        color: colors.primary,
         fontSize: 13,
         fontWeight: '700',
     },
@@ -387,17 +415,26 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: COLORS.glass,
+        backgroundColor: colors.glass,
         borderWidth: 1,
-        borderColor: COLORS.glassBorder,
+        borderColor: colors.glassBorder,
         borderRadius: 15,
         padding: 12,
         marginBottom: 10,
         marginHorizontal: 20,
-        shadowColor: COLORS.primary,
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 2,
+        ...Platform.select({
+            ios: {
+                shadowColor: colors.primary,
+                shadowOpacity: 0.1,
+                shadowRadius: 8,
+            },
+            android: {
+                elevation: 2,
+            },
+            web: {
+                boxShadow: `0px 0px 8px ${colors.primary}1A` // 1A is 10% opacity
+            }
+        })
     },
     itemMain: {
         flexDirection: 'row',
@@ -413,17 +450,17 @@ const styles = StyleSheet.create({
     },
     qtyText: {
         fontWeight: 'bold',
-        color: COLORS.accent,
+        color: colors.accent,
     },
     itemInfo: { flex: 1 },
     itemName: {
         fontSize: 15,
         fontWeight: 'bold',
-        color: COLORS.textDark,
+        color: colors.textDark,
     },
     itemPrice: {
         fontSize: 13,
-        color: COLORS.accent,
+        color: colors.accent,
         fontWeight: '600',
     },
     actions: {
@@ -442,7 +479,7 @@ const styles = StyleSheet.create({
     qtyBtnText: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: COLORS.secondary,
+        color: colors.secondary,
     },
     removeBtn: { marginLeft: 8 },
     sectionHeader: {
@@ -458,11 +495,11 @@ const styles = StyleSheet.create({
     paymentMethodCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: COLORS.glass,
+        backgroundColor: colors.glass,
         borderRadius: 18,
         padding: 15,
         borderWidth: 1,
-        borderColor: COLORS.glassBorder,
+        borderColor: colors.glassBorder,
     },
     paymentIcon: {
         fontSize: 24,
@@ -472,11 +509,11 @@ const styles = StyleSheet.create({
     paymentTitle: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: COLORS.textDark,
+        color: colors.textDark,
     },
     paymentSub: {
         fontSize: 12,
-        color: COLORS.textLight,
+        color: colors.textLight,
         marginTop: 2,
     },
     checkCircle: {
@@ -484,7 +521,7 @@ const styles = StyleSheet.create({
         height: 22,
         borderRadius: 11,
         borderWidth: 2,
-        borderColor: COLORS.accent,
+        borderColor: colors.accent,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -492,31 +529,31 @@ const styles = StyleSheet.create({
         width: 10,
         height: 10,
         borderRadius: 5,
-        backgroundColor: COLORS.accent,
+        backgroundColor: colors.accent,
     },
     label: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: COLORS.textDark,
+        color: colors.textDark,
     },
     input: {
-        backgroundColor: COLORS.glass,
+        backgroundColor: colors.glass,
         borderRadius: 12,
         padding: 12,
         minHeight: 60,
         textAlignVertical: 'top',
         fontSize: 14,
-        color: COLORS.secondary,
+        color: colors.secondary,
         borderWidth: 1,
-        borderColor: COLORS.glassBorder,
+        borderColor: colors.glassBorder,
     },
     billBox: {
-        backgroundColor: COLORS.glass,
+        backgroundColor: colors.glass,
         borderRadius: 15,
         padding: 15,
         marginBottom: 20,
         borderWidth: 1,
-        borderColor: COLORS.glassBorder,
+        borderColor: colors.glassBorder,
     },
     billRow: {
         flexDirection: 'row',
@@ -524,12 +561,12 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     billLabel: {
-        color: COLORS.textLight,
+        color: colors.textLight,
         fontSize: 14,
     },
     billValue: {
         fontWeight: '600',
-        color: COLORS.secondary,
+        color: colors.secondary,
     },
     totalRow: {
         marginTop: 8,
@@ -540,12 +577,12 @@ const styles = StyleSheet.create({
     totalBillLabel: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: COLORS.secondary,
+        color: colors.secondary,
     },
     totalBillValue: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: COLORS.accent,
+        color: colors.accent,
     },
     orderBtn: {
         backgroundColor: '#128C7E', // Premium WhatsApp Teal
@@ -553,11 +590,20 @@ const styles = StyleSheet.create({
         borderRadius: 18,
         justifyContent: 'center',
         alignItems: 'center',
-        elevation: 8,
-        shadowColor: '#128C7E',
-        shadowOpacity: 0.4,
-        shadowOffset: { width: 0, height: 8 },
-        shadowRadius: 12,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#128C7E',
+                shadowOpacity: 0.4,
+                shadowOffset: { width: 0, height: 8 },
+                shadowRadius: 12,
+            },
+            android: {
+                elevation: 8,
+            },
+            web: {
+                boxShadow: '0px 8px 12px rgba(18, 140, 126, 0.4)'
+            }
+        }),
         overflow: 'hidden',
     },
     btnDisabled: { opacity: 0.7 },

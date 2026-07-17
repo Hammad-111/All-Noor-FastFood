@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import WaveDivider from './WaveDivider';
@@ -9,10 +9,12 @@ import WaveDivider from './WaveDivider';
 const { width, height } = Dimensions.get('window');
 
 const SplitScreen = ({ children, ratio = 0.35 }) => {
+    const { colors } = useTheme();
+    const styles = React.useMemo(() => createStyles(colors), [colors]);
     return (
         <View style={styles.container}>
             <LinearGradient
-                colors={COLORS.primaryGradient}
+                colors={colors.primaryGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={[styles.topHalf, { height: height * ratio }]}
@@ -29,7 +31,7 @@ const SplitScreen = ({ children, ratio = 0.35 }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     container: {
         flex: 1,
     },
@@ -38,7 +40,7 @@ const styles = StyleSheet.create({
         top: 0,
         left: 0,
         right: 0,
-        backgroundColor: COLORS.primary,
+        backgroundColor: colors.primary,
         zIndex: 0,
     },
     bottomHalf: {
@@ -47,7 +49,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: COLORS.background,
+        backgroundColor: colors.background,
         zIndex: -1,
     },
     dividerContainer: {

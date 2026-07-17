@@ -3,12 +3,14 @@ import { View, Text, StyleSheet, Animated, Dimensions, Platform } from 'react-na
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useToast } from '../context/ToastContext';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
 const Toast = () => {
+    const { colors } = useTheme();
+    const styles = React.useMemo(() => createStyles(colors), [colors]);
     const { toast, hideToast } = useToast();
     const slideAnim = useRef(new Animated.Value(-100)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -80,7 +82,7 @@ const Toast = () => {
     };
 
     return (
-        <SafeAreaView pointerEvents="none" style={styles.container}>
+        <SafeAreaView style={[styles.container, { pointerEvents: 'none' }]}>
             <Animated.View
                 style={[
                     styles.toastWrapper,
@@ -107,7 +109,7 @@ const Toast = () => {
                                         inputRange: [0, 1],
                                         outputRange: ['100%', '0%']
                                     }),
-                                    backgroundColor: toast.type === 'error' ? '#FF5252' : COLORS.accent,
+                                    backgroundColor: toast.type === 'error' ? '#FF5252' : colors.accent,
                                 }
                             ]}
                         />
@@ -118,7 +120,7 @@ const Toast = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     container: {
         position: 'absolute',
         top: 0,
@@ -132,11 +134,20 @@ const styles = StyleSheet.create({
         borderRadius: 25, // More rounded/capsule
         borderWidth: 1,
         overflow: 'hidden',
-        elevation: 10,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
+        ...Platform.select({
+            ios: {
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+            },
+            android: {
+                elevation: 10,
+            },
+            web: {
+                boxShadow: '0px 4px 8px rgba(0,0,0,0.3)'
+            }
+        }),
     },
     blurContainer: {
         paddingVertical: 8, // More compact

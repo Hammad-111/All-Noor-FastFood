@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Animated, Image, KeyboardAvoidingView, Platform } from 'react-native';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { auth, db } from '../utils/firebaseConfig';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
@@ -14,6 +14,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons as Icon } from '@expo/vector-icons';
 
 const LoginScreen = ({ navigation }) => {
+    const { colors } = useTheme();
+    const styles = React.useMemo(() => createStyles(colors), [colors]);
     const insets = useSafeAreaInsets();
     const { t, language } = useLanguage();
     const { showToast } = useToast();
@@ -95,7 +97,6 @@ const LoginScreen = ({ navigation }) => {
                 showToast("Welcome back to Al Noor!", "success");
             }
         } catch (error) {
-            console.error("Auth Error:", error);
             let msg = error.message;
             if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
                 msg = language === 'ur' ? "ای میل یا پاس ورڈ غلط ہے" : "Invalid email or password";
@@ -130,7 +131,7 @@ const LoginScreen = ({ navigation }) => {
                 </View>
 
                 <View style={styles.bottomSection}>
-                    <WaveDivider fill={COLORS.background} customTop={-38} />
+                    <WaveDivider fill={colors.background} customTop={-38} />
 
                     <ScrollView
                         showsVerticalScrollIndicator={false}
@@ -147,7 +148,7 @@ const LoginScreen = ({ navigation }) => {
 
                             {isRegister && (
                                 <View style={styles.inputBox}>
-                                    <Icon name="person-outline" size={20} color={COLORS.accent} style={styles.inputIcon} />
+                                    <Icon name="person-outline" size={20} color={colors.accent} style={styles.inputIcon} />
                                     <TextInput
                                         style={styles.input}
                                         placeholder={language === 'ur' ? "آپ کا نام" : "Full Name"}
@@ -159,7 +160,7 @@ const LoginScreen = ({ navigation }) => {
                             )}
 
                             <View style={styles.inputBox}>
-                                <Icon name="mail-outline" size={20} color={COLORS.accent} style={styles.inputIcon} />
+                                <Icon name="mail-outline" size={20} color={colors.accent} style={styles.inputIcon} />
                                 <TextInput
                                     style={styles.input}
                                     placeholder="email@example.com"
@@ -172,7 +173,7 @@ const LoginScreen = ({ navigation }) => {
                             </View>
 
                             <View style={styles.inputBox}>
-                                <Icon name="lock-closed-outline" size={20} color={COLORS.accent} style={styles.inputIcon} />
+                                <Icon name="lock-closed-outline" size={20} color={colors.accent} style={styles.inputIcon} />
                                 <TextInput
                                     style={styles.input}
                                     placeholder="••••••"
@@ -188,7 +189,7 @@ const LoginScreen = ({ navigation }) => {
                                     <Icon
                                         name={showPassword ? "eye-off-outline" : "eye-outline"}
                                         size={20}
-                                        color={COLORS.accent}
+                                        color={colors.accent}
                                     />
                                 </TouchableOpacity>
                             </View>
@@ -234,7 +235,7 @@ const LoginScreen = ({ navigation }) => {
                             </Text>
 
                             <View style={styles.inputBox}>
-                                <Icon name="mail-outline" size={20} color={COLORS.accent} style={styles.inputIcon} />
+                                <Icon name="mail-outline" size={20} color={colors.accent} style={styles.inputIcon} />
                                 <TextInput
                                     style={styles.input}
                                     placeholder="email@example.com"
@@ -269,12 +270,12 @@ const LoginScreen = ({ navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
-    main: { flex: 1, backgroundColor: COLORS.background, overflow: 'hidden' },
+const createStyles = (colors) => StyleSheet.create({
+    main: { flex: 1, backgroundColor: colors.background, overflow: 'hidden' },
     topSection: {
         alignItems: 'center',
         paddingBottom: 20,
-        backgroundColor: COLORS.primary
+        backgroundColor: colors.primary
     },
     header: { width: '100%', paddingHorizontal: 20, paddingTop: 10 },
     brandContainer: { alignItems: 'center', marginTop: 10 },
@@ -284,26 +285,35 @@ const styles = StyleSheet.create({
         borderRadius: 50,
         backgroundColor: '#FFF',
         padding: 5,
-        elevation: 5,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 6,
+        ...Platform.select({
+            ios: {
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.1,
+                shadowRadius: 6,
+            },
+            android: {
+                elevation: 5,
+            },
+            web: {
+                boxShadow: '0px 4px 6px rgba(0,0,0,0.1)'
+            }
+        }),
     },
     logo: { width: '100%', height: '100%', borderRadius: 50 },
-    welcomeText: { fontSize: 28, fontWeight: 'bold', color: COLORS.secondary, marginTop: 15 },
+    welcomeText: { fontSize: 28, fontWeight: 'bold', color: colors.secondary, marginTop: 15 },
     tagline: { fontSize: 12, color: 'rgba(255,255,255,0.7)', letterSpacing: 2 },
-    bottomSection: { flex: 1, backgroundColor: COLORS.background, paddingHorizontal: 0, paddingTop: 0 },
+    bottomSection: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 0, paddingTop: 0 },
     scrollContent: { paddingHorizontal: 30, paddingTop: 60, paddingBottom: 20 },
     formContainer: { width: '100%', alignItems: 'center' },
-    formTitle: { fontSize: 24, fontWeight: 'bold', color: COLORS.textDark, marginBottom: 10 },
+    formTitle: { fontSize: 24, fontWeight: 'bold', color: colors.textDark, marginBottom: 10 },
     formSub: { fontSize: 14, color: '#888', textAlign: 'center', marginBottom: 30, lineHeight: 20 },
     inputBox: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: COLORS.glass,
+        backgroundColor: colors.glass,
         borderWidth: 1,
-        borderColor: COLORS.glassBorder,
+        borderColor: colors.glassBorder,
         borderRadius: 15,
         paddingHorizontal: 15,
         width: '100%',
@@ -313,24 +323,33 @@ const styles = StyleSheet.create({
     eyeIcon: {
         padding: 5,
     },
-    input: { flex: 1, height: 55, fontSize: 16, color: COLORS.secondary },
+    input: { flex: 1, height: 55, fontSize: 16, color: colors.secondary },
     actionBtn: {
         width: '100%',
         height: 55,
-        backgroundColor: COLORS.primary,
+        backgroundColor: colors.primary,
         borderRadius: 15,
         justifyContent: 'center',
         alignItems: 'center',
-        elevation: 5,
-        shadowColor: COLORS.primary,
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
+        ...Platform.select({
+            ios: {
+                shadowColor: colors.primary,
+                shadowOpacity: 0.3,
+                shadowRadius: 10,
+            },
+            android: {
+                elevation: 5,
+            },
+            web: {
+                boxShadow: `0px 0px 10px ${colors.primary}4D` // 4D is 30% opacity
+            }
+        }),
         marginTop: 10,
     },
     btnDisabled: { opacity: 0.7 },
-    btnText: { color: COLORS.secondary, fontSize: 18, fontWeight: 'bold' },
-    toggleText: { color: COLORS.primary, fontWeight: '600', fontSize: 14 },
-    forgotText: { color: COLORS.primary, fontSize: 13, fontWeight: '500' },
+    btnText: { color: colors.secondary, fontSize: 18, fontWeight: 'bold' },
+    toggleText: { color: colors.primary, fontWeight: '600', fontSize: 14 },
+    forgotText: { color: colors.primary, fontSize: 13, fontWeight: '500' },
     // Modal Styles
     modalOverlay: {
         position: 'absolute',
@@ -343,26 +362,32 @@ const styles = StyleSheet.create({
     },
     modalContent: {
         width: '100%',
-        backgroundColor: COLORS.background,
+        backgroundColor: colors.background,
         borderRadius: 20,
         padding: 25,
         borderWidth: 1,
-        borderColor: COLORS.glassBorder,
-        elevation: 10,
+        borderColor: colors.glassBorder,
+        ...Platform.select({
+            android: { elevation: 10 },
+            web: { boxShadow: '0px 10px 15px rgba(0,0,0,0.3)' }
+        })
     },
-    modalTitle: { fontSize: 22, fontWeight: 'bold', color: COLORS.secondary, marginBottom: 10 },
+    modalTitle: { fontSize: 22, fontWeight: 'bold', color: colors.secondary, marginBottom: 10 },
     modalSub: { fontSize: 14, color: '#888', marginBottom: 20, lineHeight: 20 },
     modalFooter: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10 },
     cancelBtn: { paddingVertical: 10, paddingHorizontal: 20, marginRight: 10 },
     cancelBtnText: { color: '#888', fontSize: 16, fontWeight: '600' },
     resetBtn: {
-        backgroundColor: COLORS.primary,
+        backgroundColor: colors.primary,
         paddingVertical: 12,
         paddingHorizontal: 25,
         borderRadius: 12,
-        elevation: 3,
+        ...Platform.select({
+            android: { elevation: 3 },
+            web: { boxShadow: '0px 3px 5px rgba(0,0,0,0.1)' }
+        })
     },
-    resetBtnText: { color: COLORS.secondary, fontSize: 16, fontWeight: 'bold' },
+    resetBtnText: { color: colors.secondary, fontSize: 16, fontWeight: 'bold' },
 });
 
 export default LoginScreen;

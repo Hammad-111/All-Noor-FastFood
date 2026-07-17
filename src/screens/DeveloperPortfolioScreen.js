@@ -7,12 +7,14 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import SplitScreen from '../components/SplitScreen';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import BackButton from '../components/BackButton';
 
 const { width } = Dimensions.get('window');
 
 const DeveloperPortfolioScreen = () => {
+    const { colors } = useTheme();
+    const styles = React.useMemo(() => createStyles(colors), [colors]);
     const insets = useSafeAreaInsets();
     const navigation = useNavigation();
 
@@ -25,20 +27,20 @@ const DeveloperPortfolioScreen = () => {
             Animated.timing(fadeAnim, {
                 toValue: 1,
                 duration: 800,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             }),
             Animated.spring(slideAnim, {
                 toValue: 0,
                 friction: 8,
                 tension: 40,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             }),
             Animated.loop(
                 Animated.timing(rotateAnim, {
                     toValue: 1,
                     duration: 10000,
                     easing: (t) => t,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 })
             ).start()
         ]).start();
@@ -56,7 +58,7 @@ const DeveloperPortfolioScreen = () => {
                     {/* Top Section: Branding & Avatar */}
                     <View style={styles.headerSection}>
                         <View style={styles.headerRow}>
-                            <BackButton color={COLORS.secondary} />
+                            <BackButton color={colors.secondary} />
                             <Text style={styles.headerTitle}>Developer Portfolio</Text>
                             <View style={{ width: 40 }} />
                         </View>
@@ -73,7 +75,7 @@ const DeveloperPortfolioScreen = () => {
                             <View style={styles.glowingBorderContainer}>
                                 <Animated.View style={[styles.rotatingGlow, { transform: [{ rotate: spin }] }]}>
                                     <LinearGradient
-                                        colors={[COLORS.accent, 'transparent', COLORS.primary, 'transparent']}
+                                        colors={[colors.accent, 'transparent', colors.primary, 'transparent']}
                                         style={styles.fullSize}
                                     />
                                 </Animated.View>
@@ -86,7 +88,7 @@ const DeveloperPortfolioScreen = () => {
                                 </View>
                             </View>
                             <View style={styles.verifiedBadge}>
-                                <Icon name="checkmark-circle" size={24} color={COLORS.accent} />
+                                <Icon name="checkmark-circle" size={24} color={colors.accent} />
                             </View>
                         </Animated.View>
                     </View>
@@ -128,7 +130,7 @@ const DeveloperPortfolioScreen = () => {
 
                                 <TouchableOpacity style={styles.contactItem} activeOpacity={0.7} onPress={() => Linking.openURL('mailto:connect2hammadjaveed@gmail.com')}>
                                     <View style={styles.contactIconBox}>
-                                        <Icon name="mail" size={20} color={COLORS.accent} />
+                                        <Icon name="mail" size={20} color={colors.accent} />
                                     </View>
                                     <View style={styles.contactTextContainer}>
                                         <Text style={styles.contactLabel}>Email Address</Text>
@@ -138,7 +140,7 @@ const DeveloperPortfolioScreen = () => {
 
                                 <TouchableOpacity style={styles.contactItem} activeOpacity={0.7} onPress={() => Linking.openURL('tel:+923017891391')}>
                                     <View style={styles.contactIconBox}>
-                                        <Icon name="call" size={20} color={COLORS.accent} />
+                                        <Icon name="call" size={20} color={colors.accent} />
                                     </View>
                                     <View style={styles.contactTextContainer}>
                                         <Text style={styles.contactLabel}>Phone Number</Text>
@@ -148,7 +150,7 @@ const DeveloperPortfolioScreen = () => {
 
                                 <TouchableOpacity style={styles.contactItem} activeOpacity={0.7} onPress={() => Linking.openURL('https://www.hammadjaved.software/')}>
                                     <View style={styles.contactIconBox}>
-                                        <Icon name="globe-outline" size={20} color={COLORS.accent} />
+                                        <Icon name="globe-outline" size={20} color={colors.accent} />
                                     </View>
                                     <View style={styles.contactTextContainer}>
                                         <Text style={styles.contactLabel}>Personal Website</Text>
@@ -158,11 +160,11 @@ const DeveloperPortfolioScreen = () => {
 
                                 <TouchableOpacity style={styles.hireButton} activeOpacity={0.8} onPress={() => Linking.openURL('https://www.hammadjaved.software/')}>
                                     <LinearGradient
-                                        colors={[COLORS.primary, '#600000']}
+                                        colors={[colors.primary, colors.primaryDark]}
                                         style={styles.hireGradient}
                                     >
                                         <Text style={styles.hireText}>Let's Build Something Great</Text>
-                                        <Icon name="arrow-forward" size={20} color={COLORS.secondary} />
+                                        <Icon name="arrow-forward" size={20} color={colors.secondary} />
                                     </LinearGradient>
                                 </TouchableOpacity>
 
@@ -176,7 +178,7 @@ const DeveloperPortfolioScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     mainContainer: { flex: 1 },
     container: { flex: 1 },
     fullSize: { flex: 1 },
@@ -196,7 +198,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: COLORS.secondary,
+        color: colors.secondary,
         letterSpacing: 1,
     },
     avatarMainContainer: {
@@ -222,7 +224,7 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
         borderRadius: 86,
-        backgroundColor: COLORS.secondary,
+        backgroundColor: colors.secondary,
         borderWidth: 3,
         borderColor: 'rgba(255,215,0,0.3)',
         overflow: 'hidden',
@@ -237,7 +239,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 5,
         right: 15,
-        backgroundColor: COLORS.background,
+        backgroundColor: colors.background,
         borderRadius: 15,
         padding: 2,
     },
@@ -256,7 +258,7 @@ const styles = StyleSheet.create({
     name: {
         fontSize: 32,
         fontWeight: 'bold',
-        color: COLORS.textDark,
+        color: colors.textDark,
         marginBottom: 10,
     },
     tagContainer: {
@@ -270,13 +272,13 @@ const styles = StyleSheet.create({
     tagText: {
         fontSize: 12,
         fontWeight: '900',
-        color: COLORS.accent,
+        color: colors.accent,
         letterSpacing: 2,
     },
     sectionTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: COLORS.textDark,
+        color: colors.textDark,
         marginTop: 15,
         marginBottom: 15,
     },
@@ -303,7 +305,7 @@ const styles = StyleSheet.create({
     statValue: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: COLORS.primary,
+        color: colors.primary,
     },
     statLabel: {
         fontSize: 12,
@@ -343,7 +345,7 @@ const styles = StyleSheet.create({
     contactValue: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: COLORS.textDark,
+        color: colors.textDark,
     },
     contactTextContainer: {
         flex: 1,
@@ -352,11 +354,20 @@ const styles = StyleSheet.create({
         marginTop: 20,
         borderRadius: 20,
         overflow: 'hidden',
-        elevation: 8,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
+        ...Platform.select({
+            ios: {
+                shadowColor: colors.primary,
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.3,
+                shadowRadius: 12,
+            },
+            android: {
+                elevation: 8,
+            },
+            web: {
+                boxShadow: `0px 8px 12px ${colors.primary}4D` // 4D is 30% opacity
+            }
+        }),
     },
     hireGradient: {
         flexDirection: 'row',
@@ -366,7 +377,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     hireText: {
-        color: COLORS.secondary,
+        color: colors.secondary,
         fontSize: 18,
         fontWeight: 'bold',
         marginRight: 15,

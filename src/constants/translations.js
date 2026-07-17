@@ -17,13 +17,17 @@ export const translations = {
         categories: {
             'Burgers': 'Burgers',
             'Pizza': 'Pizza',
-            'Karahi': 'Karahi',
             'Shawarma': 'Shawarma',
+            'Paratha Rolls': 'Paratha Rolls',
+            'Pasta': 'Pasta',
+            'Chicken': 'Chicken Broast',
             'Rice': 'Rice',
-            'Chicken': 'Chicken',
-            'Soup/Salad': 'Soup/Salad',
-            'Drinks/Sides': 'Drinks/Sides'
+            'Fries': 'Fries',
+            'Wings': 'Wings & Nuggets',
+            'Drinks': 'Cold Drinks',
+            'Special Items': 'Special Items'
         },
+
         specials: 'Specials',
         seeAll: 'See All',
         noItemsFound: 'No items found',
@@ -38,6 +42,14 @@ export const translations = {
         editPrice: 'Edit Price',
         savePrice: 'Save Price',
         newPrice: 'New Price',
+        selectSize: 'Customize',
+        small: 'S',
+        medium: 'M',
+        large: 'L',
+        half: 'HALF',
+        full: 'FULL',
+        from: 'From',
+
 
         // Cart / Checkout
         myCart: 'My Cart',
@@ -126,6 +138,16 @@ export const translations = {
 
         // Developer
         viewPortfolio: 'VIEW PORTFOLIO',
+
+        // Store Info
+        storeAddress: 'Shaheed Road, Mian Channu',
+        storeTimings: '11:00 AM - 03:30 AM',
+        minOrder: 'Min. Order: Rs. 600',
+        freeDelivery: 'Free Delivery: within 1km',
+        contactWhatsApp: '0304-8880990',
+        contactHotline: '065-2664787',
+        contactNumbers: ['065-2664787', '0304-8880990', '0336-8880990', '0312-8880990', '0321-7515371'],
+        minOrderRequired: 'Minimum order amount is Rs. 600. Please add more items.',
     },
     ur: {
         // App General
@@ -145,13 +167,17 @@ export const translations = {
         categories: {
             'Burgers': 'برگر',
             'Pizza': 'پیزا',
-            'Karahi': 'کڑاہی',
             'Shawarma': 'شاورما',
+            'Paratha Rolls': 'پراٹھا رولز',
+            'Pasta': 'پاستا',
+            'Chicken': 'چکن بروسٹ',
             'Rice': 'چاول',
-            'Chicken': 'چکن',
-            'Soup/Salad': 'سوپ/سلاد',
-            'Drinks/Sides': 'ڈرنکس/سائیڈز'
+            'Fries': 'فرائز',
+            'Wings': 'ونگز اور نگٹس',
+            'Drinks': 'کولڈ ڈرنکس',
+            'Special Items': 'سپیشل آئٹمز'
         },
+
         specials: 'خاص',
         seeAll: 'سب دیکھیں',
         noItemsFound: 'کوئی چیز نہیں ملی',
@@ -166,6 +192,14 @@ export const translations = {
         editPrice: 'قیمت تبدیل کریں',
         savePrice: 'قیمت محفوظ کریں',
         newPrice: 'نئی قیمت',
+        selectSize: 'انتخاب کریں',
+        small: 'چھوٹا',
+        medium: 'درمیانہ',
+        large: 'بڑا',
+        half: 'ہاف',
+        full: 'فل',
+        from: 'سے',
+
 
         // Cart / Checkout
         myCart: 'میرا کارٹ',
@@ -254,5 +288,12 @@ export const translations = {
 
         // Developer
         viewPortfolio: 'پورٹ فولیو دیکھیں',
+
+        // Store Info
+        storeAddress: 'شہید روڈ، میاں چنوں',
+        storeTimings: 'صبح 11:00 سے رات 03:30 تک',
+        minOrder: 'کم از کم آرڈر: 600 روپے',
+        freeDelivery: 'مفت ڈیلیوری: 1 کلومیٹر کے اندر',
+        minOrderRequired: 'آرڈر کے لیے کم از کم 600 روپے کا ہونا ضروری ہے۔ براہ کرم مزید اشیاء شامل کریں۔',
     }
 };

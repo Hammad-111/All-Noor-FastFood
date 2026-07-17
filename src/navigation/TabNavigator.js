@@ -1,13 +1,11 @@
 
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { StyleSheet, View, Text } from 'react-native';
 import HomeScreen from '../screens/HomeScreen';
 import CheckoutScreen from '../screens/CheckoutScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import FavoritesScreen from '../screens/FavoritesScreen';
 import CustomTabBar from '../components/CustomTabBar';
-import { COLORS } from '../constants/theme';
 import { useCart } from '../context/CartContext';
 
 const Tab = createBottomTabNavigator();

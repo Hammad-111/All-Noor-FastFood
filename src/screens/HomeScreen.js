@@ -5,7 +5,8 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Dimensions, 
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import SplitScreen from '../components/SplitScreen';
-import { COLORS, FONTS, SIZES } from '../constants/theme';
+import { FONTS, SIZES } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { getImage } from '../utils/imageMap';
 import { useNavigation } from '@react-navigation/native';
 import { useCart } from '../context/CartContext';
@@ -22,94 +23,483 @@ const CATEGORIES = [
     { id: '0', name: 'Deals', icon: '🔥' },
     { id: '1', name: 'Burgers', icon: '🍔' },
     { id: '2', name: 'Pizza', icon: '🍕' },
-    { id: '3', name: 'Karahi', icon: '🥘' },
-    { id: '4', name: 'Shawarma', icon: '🌯' },
-    { id: '5', name: 'Rice', icon: '🍚' },
+    { id: '3', name: 'Shawarma', icon: '🌯' },
+    { id: '4', name: 'Paratha Rolls', icon: '🌯' },
+    { id: '5', name: 'Pasta', icon: '🍝' },
     { id: '6', name: 'Chicken', icon: '🍗' },
-    { id: '7', name: 'Soup/Salad', icon: '🥣' },
-    { id: '8', name: 'Drinks/Sides', icon: '🥤' },
+    { id: '7', name: 'Rice', icon: '🍚' },
+    { id: '8', name: 'Fries', icon: '🍟' },
+    { id: '9', name: 'Wings', icon: '🍗' },
+    { id: '10', name: 'Drinks', icon: '🥤' },
+    { id: '11', name: 'Special Items', icon: '✨' },
 ];
+
 
 const PRODUCTS = [
-    // Burger's Zone
-    { id: 'b1', name: 'Petty Burger', price: 140, category: 'Burgers', imageKey: 'burger_01', description: 'Classic petty burger.' },
-    { id: 'b2', name: 'Zinger Burger', price: 150, category: 'Burgers', imageKey: 'burger_01', description: 'Crispy zinger fillet.' },
-    { id: 'b2_p', name: 'Zinger Burger (Cheese)', price: 170, category: 'Burgers', imageKey: 'burger_01', description: 'Zinger burger with extra cheese.' },
-    { id: 'b3', name: 'Big Zinger Burger', price: 180, category: 'Burgers', imageKey: 'burger_01', description: 'Classic big zinger.' },
-    { id: 'b3_p', name: 'Big Zinger (Cheese)', price: 220, category: 'Burgers', imageKey: 'burger_01', description: 'Big zinger with extra cheese.' },
-    { id: 'b4', name: 'Smokey Burger', price: 190, category: 'Burgers', imageKey: 'burger_01', description: 'Hickory smoked flavor.' },
-    { id: 'b5', name: 'Tower Burger', price: 250, category: 'Burgers', imageKey: 'burger_01', description: 'Massive multi-layer zinger.' },
-    { id: 'b6', name: 'Al Noor Special Burger', price: 260, category: 'Burgers', imageKey: 'burger_special', description: 'Signature home style burger.' },
-    { id: 'b7', name: 'Chapli Kabab Burger', price: 200, category: 'Burgers', imageKey: 'burger_01', description: 'Traditional chapli kabab patty.' },
+    // --- PIZZAS ---
+    {
+        id: 'p_ans',
+        name: 'Al Noor Special Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_special',
+        description: 'Our signature blend of premium toppings and secret sauces.',
+        sizes: [
+            { name: 'S', price: 700 },
+            { name: 'M', price: 1100 },
+            { name: 'L', price: 1600 }
+        ]
+    },
+    {
+        id: 'p_cc',
+        name: 'Crown Crust Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_crown',
+        description: 'Majestic crust with a royal blend of cheese and toppings.',
+        sizes: [
+            { name: 'M', price: 1100 },
+            { name: 'L', price: 1700 }
+        ]
+    },
+    {
+        id: 'p_ex',
+        name: 'Extreme Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'A fiery explosion of spices and overloaded ingredients.',
+        sizes: [
+            { name: 'S', price: 700 },
+            { name: 'M', price: 1250 },
+            { name: 'L', price: 1700 }
+        ]
+    },
+    {
+        id: 'p_sc',
+        name: 'Stuff Crust Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'Deliciously melted cheese overflowing from every edge.',
+        sizes: [
+            { name: 'S', price: 700 },
+            { name: 'M', price: 1250 },
+            { name: 'L', price: 1700 }
+        ]
+    },
+    {
+        id: 'p_ch',
+        name: 'Cheesy Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'A paradise for cheese lovers with a double layer of mozzarella.',
+        sizes: [
+            { name: 'S', price: 700 },
+            { name: 'M', price: 1250 },
+            { name: 'L', price: 1700 }
+        ]
+    },
+    {
+        id: 'p_sk',
+        name: 'Seekh Kabab Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'Traditional seekh kababs paired with garden fresh veggies.',
+        sizes: [
+            { name: 'S', price: 650 },
+            { name: 'M', price: 1100 },
+            { name: 'L', price: 1500 }
+        ]
+    },
+    {
+        id: 'p_gm',
+        name: 'Green Malai Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'Velvety malai sauce with fresh green herbs and chicken.',
+        sizes: [
+            { name: 'S', price: 700 },
+            { name: 'M', price: 1250 },
+            { name: 'L', price: 1700 }
+        ]
+    },
+    {
+        id: 'p_cr',
+        name: 'Crispy Chicken Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'Golden fried chicken strips for a perfect crunch in every bite.',
+        sizes: [
+            { name: 'S', price: 800 },
+            { name: 'M', price: 1300 },
+            { name: 'L', price: 1900 }
+        ]
+    },
+    {
+        id: 'p_sh',
+        name: 'Shawarma Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'Authentic shawarma-style chicken with a local twist.',
+        sizes: [
+            { name: 'S', price: 700 },
+            { name: 'M', price: 1250 },
+            { name: 'L', price: 1700 }
+        ]
+    },
+    {
+        id: 'p_cm',
+        name: 'Creamy Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'Smooth, rich white sauce for a luxurious pizza experience.',
+        sizes: [
+            { name: 'S', price: 700 },
+            { name: 'M', price: 1250 },
+            { name: 'L', price: 1700 }
+        ]
+    },
+    {
+        id: 'p_bf',
+        name: 'Bonfire Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'Hickory-smoked chicken for that authentic campfire aroma.',
+        sizes: [
+            { name: 'S', price: 700 },
+            { name: 'M', price: 1250 },
+            { name: 'L', price: 1700 }
+        ]
+    },
+    {
+        id: 'p_lz',
+        name: 'Lazania Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'Inspired by lasagna layers, overflowing with sauce and cheese.',
+        sizes: [
+            { name: 'S', price: 700 },
+            { name: 'M', price: 1250 },
+            { name: 'L', price: 1700 }
+        ]
+    },
+    {
+        id: 'p_rc',
+        name: 'Royal Crust Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'Fluffy, stuffed golden crust with a touch of royalty.',
+        sizes: [
+            { name: 'M', price: 1000 },
+            { name: 'L', price: 1400 }
+        ]
+    },
+    {
+        id: 'p_stk',
+        name: 'Stick Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'Unique thin crust sticks topped with premium ingredients.',
+        sizes: [
+            { name: 'M', price: 1000 },
+            { name: 'L', price: 1500 }
+        ]
+    },
+    {
+        id: 'p_nw',
+        name: 'Nawabi Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'Exquisite aromatic spices for a truly royal Nawabi treat.',
+        sizes: [
+            { name: 'M', price: 1000 },
+            { name: 'L', price: 1500 }
+        ]
+    },
+    {
+        id: 'p_shi',
+        name: 'Shahi Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'Royal shahi sauce with marinated chicken chunks.',
+        sizes: [
+            { name: 'M', price: 1200 },
+            { name: 'L', price: 1600 }
+        ]
+    },
+    {
+        id: 'p_gb',
+        name: 'Grill Bite Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'Juicy flame-grilled chicken chunks for a smokey bite.',
+        sizes: [
+            { name: 'M', price: 1200 },
+            { name: 'L', price: 1600 }
+        ]
+    },
+    {
+        id: 'p_czs',
+        name: 'Cheezy Stik Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'Loaded with cheese sticks for the ultimate stretch.',
+        sizes: [
+            { name: 'M', price: 1200 },
+            { name: 'L', price: 1600 }
+        ]
+    },
+    {
+        id: 'p_mu',
+        name: 'Mughlai Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'Rich Mughal-inspired flavors with a savory kick.',
+        sizes: [
+            { name: 'M', price: 1200 },
+            { name: 'L', price: 1600 }
+        ]
+    },
+    {
+        id: 'p_hs',
+        name: 'Hostan Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'A special blend of secret spices and tender meat.',
+        sizes: [
+            { name: 'M', price: 1200 },
+            { name: 'L', price: 1600 }
+        ]
+    },
+    {
+        id: 'p_cs',
+        name: 'City Special Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'The local favorite with balanced spices and fresh dough.',
+        sizes: [
+            { name: 'M', price: 1200 },
+            { name: 'L', price: 1600 }
+        ]
+    },
+    {
+        id: 'p_sz',
+        name: 'Sazilan Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'Sizzling spicy chicken with a hint of garlic and herbs.',
+        sizes: [
+            { name: 'M', price: 1200 },
+            { name: 'L', price: 1600 }
+        ]
+    },
+    {
+        id: 'p_dn',
+        name: 'Donnat Pizza',
+        price: 1100,
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'Fun donut-shaped crust with extra toppings and cheese.',
+    },
+    {
+        id: 'p_tk',
+        name: 'Chicken Tikka Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'Char-grilled tikka chunks for that authentic Lahori taste.',
+        sizes: [
+            { name: 'S', price: 550 },
+            { name: 'M', price: 1000 },
+            { name: 'L', price: 1400 }
+        ]
+    },
+    {
+        id: 'p_fj',
+        name: 'Fajita Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_fajita',
+        description: 'Bell peppers, onions, and marinated chicken for a Mexican punch.',
+        sizes: [
+            { name: 'S', price: 550 },
+            { name: 'M', price: 1000 },
+            { name: 'L', price: 1400 }
+        ]
+    },
+    {
+        id: 'p_hs_pr',
+        name: 'Hot & Spicy Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'A kick of red chilies and hot spices for the brave.',
+        sizes: [
+            { name: 'S', price: 550 },
+            { name: 'M', price: 1000 },
+            { name: 'L', price: 1400 }
+        ]
+    },
+    {
+        id: 'p_sup',
+        name: 'Supream Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'A grand feast of olives, pepperoni, and fresh veggies.',
+        sizes: [
+            { name: 'S', price: 550 },
+            { name: 'M', price: 1000 },
+            { name: 'L', price: 1400 }
+        ]
+    },
+    {
+        id: 'p_ms',
+        name: 'Mushroom Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'Earthy mushrooms and mozzarella on a golden crust.',
+        sizes: [
+            { name: 'S', price: 550 },
+            { name: 'M', price: 1000 },
+            { name: 'L', price: 1400 }
+        ]
+    },
+    {
+        id: 'p_it',
+        name: 'Italian Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'The essence of Italy with basil, oregano, and olive oil.',
+        sizes: [
+            { name: 'S', price: 550 },
+            { name: 'M', price: 1000 },
+            { name: 'L', price: 1400 }
+        ]
+    },
+    {
+        id: 'p_ach',
+        name: 'Achari Pizza',
+        category: 'Pizza',
+        imageKey: 'pizza_01',
+        description: 'Pickle-infused spices for a uniquely tangy experience.',
+        sizes: [
+            { name: 'S', price: 550 },
+            { name: 'M', price: 1000 },
+            { name: 'L', price: 1400 }
+        ]
+    },
 
-    // Pizza
-    { id: 'p1', name: 'Chicken Tikka Pizza', price: 1200, category: 'Pizza', imageKey: 'pizza_01', description: 'Traditional Tikka chunks.' },
-    { id: 'p2', name: 'Chicken Fajita Pizza', price: 1200, category: 'Pizza', imageKey: 'pizza_fajita', description: 'Mexican-style Fajita flavors.' },
-    { id: 'p3', name: 'Al Noor Special Pizza', price: 1400, category: 'Pizza', imageKey: 'pizza_01', description: 'Full loaded with extra toppings.' },
 
-    // Karahi Special
-    { id: 'k1_h', name: 'Chicken Karahi (Half)', price: 400, category: 'Karahi', imageKey: 'karahi_01', description: 'Spicy chicken karahi.' },
-    { id: 'k1_f', name: 'Chicken Karahi (Full)', price: 750, category: 'Karahi', imageKey: 'karahi_01', description: 'Spicy chicken karahi.' },
-    { id: 'k2_h', name: 'Chicken Handi (Half)', price: 500, category: 'Karahi', imageKey: 'handi_01', description: 'Creamy chicken handi.' },
-    { id: 'k2_f', name: 'Chicken Handi (Full)', price: 900, category: 'Karahi', imageKey: 'handi_01', description: 'Creamy chicken handi.' },
-    { id: 'k3_h', name: 'White Handi (Half)', price: 550, category: 'Karahi', imageKey: 'handi_01', description: 'Rich white cream handi.' },
-    { id: 'k3_f', name: 'White Handi (Full)', price: 950, category: 'Karahi', imageKey: 'handi_01', description: 'Rich white cream handi.' },
-    { id: 'k4_h', name: 'White Karahi (Half)', price: 500, category: 'Karahi', imageKey: 'karahi_01', description: 'Traditional white karahi.' },
-    { id: 'k4_f', name: 'White Karahi (Full)', price: 900, category: 'Karahi', imageKey: 'karahi_01', description: 'Traditional white karahi.' },
-    { id: 'k5_h', name: 'Achari Handi (Half)', price: 400, category: 'Karahi', imageKey: 'handi_01', description: 'Tangy achari flavor.' },
-    { id: 'k5_f', name: 'Achari Handi (Full)', price: 750, category: 'Karahi', imageKey: 'handi_01', description: 'Tangy achari flavor.' },
-    { id: 'k6', name: 'Badami Handi (Full)', price: 900, category: 'Karahi', imageKey: 'handi_01', description: 'Handi with almond paste.' },
-    { id: 'k7', name: 'Murgh Makhni (Full)', price: 900, category: 'Karahi', imageKey: 'karahi_01', description: 'Butter chicken special.' },
+    // --- BURGERS ---
+    { id: 'b_ans', name: 'Al Noor Special Burger', price: 550, category: 'Burgers', imageKey: 'burger_special', description: 'Double stack of juicy patties with our secret house sauce.' },
+    { id: 'b_lv', name: 'Lava Burger', price: 600, category: 'Burgers', imageKey: 'burger_lava', description: 'Experience the eruption of molten cheese in every spicy bite.' },
+    { id: 'b_zg', name: 'Zinger Burger', price: 390, category: 'Burgers', imageKey: 'burger_zinger_premium', description: 'Golden crispy chicken fillet with fresh lettuce and mayo.' },
+    { id: 'b_zgc', name: 'Zinger Burger with Cheese', price: 440, category: 'Burgers', imageKey: 'burger_zinger_premium', description: 'The famous crispy zinger topped with a slice of premium cheddar.' },
+    { id: 'b_sm', name: 'Smoky Burger', price: 500, category: 'Burgers', imageKey: 'burger_01', description: 'Flame-kissed patty with a rich, wood-fired smoky aroma.' },
+    { id: 'b_tw', name: 'Tower Burger', price: 500, category: 'Burgers', imageKey: 'burger_01', description: 'A massive stack of crispy fillets for the ultimate hunger.' },
+    { id: 'b_pz', name: 'Pizza Burger', price: 550, category: 'Burgers', imageKey: 'burger_01', description: 'Unique burger stuffed with olives, mushrooms, and pizza sauce.' },
+    { id: 'b_gr', name: 'Grill Burger', price: 400, category: 'Burgers', imageKey: 'burger_01', description: 'Healthy and tender flame-grilled chicken for a lighter bite.' },
+    { id: 'b_ch', name: 'Chicken Burger', price: 300, category: 'Burgers', imageKey: 'burger_01', description: 'Soft bun with a savory, lightly seasoned chicken patty.' },
+    { id: 'b_ex_ch', name: 'Extra Cheese (Burger)', price: 50, category: 'Burgers', imageKey: 'sides_01', description: 'Add extra slice of cheese.' },
 
-    // Shawarma's
-    { id: 's1', name: 'Chicken Shawarma', price: 90, category: 'Shawarma', imageKey: 'shawarma_01', description: 'Grilled chicken shawarma.' },
-    { id: 's2', name: 'Zinger Shawarma', price: 150, category: 'Shawarma', imageKey: 'shawarma_01', description: 'Crispy zinger shawarma.' },
-    { id: 's3', name: 'Paratha Roll', price: 120, category: 'Shawarma', imageKey: 'roll_01', description: 'Classic chicken paratha roll.' },
-    { id: 's4', name: 'Zinger Paratha', price: 150, category: 'Shawarma', imageKey: 'roll_01', description: 'Crispy zinger wrapped in paratha.' },
 
-    // Rice
-    { id: 'r1_s', name: 'Masala Rice (Small)', price: 220, category: 'Rice', imageKey: 'rice_01', description: 'Spicy platter masala rice.' },
-    { id: 'r1_l', name: 'Masala Rice (Large)', price: 320, category: 'Rice', imageKey: 'rice_01', description: 'Large platter masala rice.' },
-    { id: 'r2_s', name: 'Egg Fried Rice (Small)', price: 220, category: 'Rice', imageKey: 'rice_01', description: 'Classic egg fried rice.' },
-    { id: 'r2_l', name: 'Egg Fried Rice (Large)', price: 320, category: 'Rice', imageKey: 'rice_01', description: 'Large egg fried rice.' },
-    { id: 'r3', name: 'Plain Rice', price: 150, category: 'Rice', imageKey: 'rice_01', description: 'Simple steamed rice.' },
+    // --- SHAWARMA ---
+    { id: 's_ch', name: 'Chicken Shawarma', price: 250, category: 'Shawarma', imageKey: 'shawarma_01', description: 'Thinly sliced grilled chicken wrapped in soft pita bread.' },
+    { id: 's_chc', name: 'Chicken Cheese Shawarma', price: 300, category: 'Shawarma', imageKey: 'shawarma_01', description: 'Juicy shawarma chunks mixed with creamy melted cheese.' },
+    { id: 's_zg', name: 'Zinger Shawarma', price: 350, category: 'Shawarma', imageKey: 'shawarma_01', description: 'The crunch of zinger in a traditional pita wrap.' },
+    { id: 's_zgc', name: 'Zinger Cheese Shawarma', price: 390, category: 'Shawarma', imageKey: 'shawarma_01', description: 'Crunchy zinger chunks with a cheesy layer of goodness.' },
+    { id: 's_kb', name: 'Kebab Shawarma', price: 390, category: 'Shawarma', imageKey: 'shawarma_01', description: 'Authentic grilled seekh kebab wrapped with desi sauces.' },
+    { id: 's_pl', name: 'Platter Shawarma', price: 390, category: 'Shawarma', imageKey: 'shawarma_01', description: 'Open-style shawarma served with extra bread and fries.' },
+    { id: 's_cw', name: 'Crispy Wrap', price: 500, category: 'Shawarma', imageKey: 'shawarma_01', description: 'A tortilla wrap filled with extra crispy chicken strips.' },
 
-    // Chicken Broast & More
-    { id: 'c1', name: 'Chicken Leg Piece', price: 130, category: 'Chicken', imageKey: 'chicken_01', description: 'Deep fried leg piece.' },
-    { id: 'c2', name: 'Chicken Chest Piece', price: 140, category: 'Chicken', imageKey: 'chicken_01', description: 'Deep fried chest piece.' },
-    { id: 'c3', name: 'Chicken Sajji', price: 800, category: 'Chicken', imageKey: 'chicken_01', description: 'Whole roasted Sajji.' },
-    { id: 'c4_5', name: 'Hot Wings (5 pcs)', price: 150, category: 'Chicken', imageKey: 'chicken_01', description: 'Spicy buffalo wings.' },
-    { id: 'c4_10', name: 'Hot Wings (10 pcs)', price: 280, category: 'Chicken', imageKey: 'chicken_01', description: 'Large serving wings.' },
-    { id: 'c5', name: 'Hot Shot (12 pcs)', price: 200, category: 'Chicken', imageKey: 'chicken_01', description: 'Popcorn chicken chunks.' },
-    { id: 'c6_5', name: 'Nuggets (5 pcs)', price: 140, category: 'Chicken', imageKey: 'chicken_01', description: 'Golden breaded nuggets.' },
-    { id: 'c6_10', name: 'Nuggets (10 pcs)', price: 260, category: 'Chicken', imageKey: 'chicken_01', description: 'Large serving nuggets.' },
 
-    // Soups & Salads
-    { id: 'sl1', name: 'Fruit Salad', price: 200, category: 'Soup/Salad', imageKey: 'salad_01', description: 'Refreshing mix of fruits.' },
-    { id: 'sl2', name: 'Russian Salad', price: 200, category: 'Soup/Salad', imageKey: 'salad_01', description: 'Creamy vegetable salad.' },
-    { id: 'sl3', name: 'Fresh Salad', price: 50, category: 'Soup/Salad', imageKey: 'salad_01', description: 'Seasonal fresh veggies.' },
-    { id: 'sl4', name: 'Kachumar Salad', price: 70, category: 'Soup/Salad', imageKey: 'salad_01', description: 'Traditional chopped kachumar.' },
-    { id: 'sp1_s', name: 'Hot & Sour Soup (S)', price: 200, category: 'Soup/Salad', imageKey: 'soup_01', description: 'Spicy chicken hot & sour.' },
-    { id: 'sp1_l', name: 'Hot & Sour Soup (L)', price: 300, category: 'Soup/Salad', imageKey: 'soup_01', description: 'Large hot & sour soup.' },
-    { id: 'sp2_s', name: 'Corn Soup (S)', price: 200, category: 'Soup/Salad', imageKey: 'soup_01', description: 'Creamy chicken corn soup.' },
-    { id: 'sp2_l', name: 'Corn Soup (L)', price: 300, category: 'Soup/Salad', imageKey: 'soup_01', description: 'Large corn soup.' },
-    { id: 'sp3_s', name: 'Al Noor Special Soup (S)', price: 250, category: 'Soup/Salad', imageKey: 'soup_01', description: 'Signature thick soup.' },
-    { id: 'sp3_l', name: 'Al Noor Special Soup (L)', price: 400, category: 'Soup/Salad', imageKey: 'soup_01', description: 'Signature thick soup.' },
+    // --- PARATHA ROLLS ---
+    { id: 'pr_ch', name: 'Chicken Paratha Roll', price: 300, category: 'Paratha Rolls', imageKey: 'roll_01', description: 'Crispy flaky paratha filled with tender spice-rubbed chicken.' },
+    { id: 'pr_zg', name: 'Zinger Paratha Roll', price: 390, category: 'Paratha Rolls', imageKey: 'roll_01', description: 'Spicy zinger strips tucked inside a freshly made flaky paratha.' },
+    { id: 'pr_kb', name: 'Kebab Paratha Roll', price: 390, category: 'Paratha Rolls', imageKey: 'roll_01', description: 'Traditional charcoal seekh kabab wrapped in a golden paratha.' },
+    { id: 'pr_tk', name: 'Tikka Paratha Roll', price: 300, category: 'Paratha Rolls', imageKey: 'roll_01', description: 'Smoky barbecued tikka chunks with onions and चटनी.' },
+    { id: 'pr_bh', name: 'Bihari Roll', price: 600, category: 'Paratha Rolls', imageKey: 'roll_01', description: 'Beefy Bihari boti melting in your mouth with every bite.' },
+    { id: 'pr_ex_ch', name: 'Extra Cheese (Roll)', price: 50, category: 'Paratha Rolls', imageKey: 'sides_01', description: 'Add extra cheese.' },
 
-    // Sides & Drinks
-    { id: 'sd1_r', name: 'French Fries (Reg)', price: 100, category: 'Drinks/Sides', imageKey: 'sides_01', description: 'Crispy salted fries.' },
-    { id: 'sd1_l', name: 'French Fries (Large)', price: 180, category: 'Drinks/Sides', imageKey: 'sides_01', description: 'Large portion fries.' },
-    { id: 'd1_r', name: 'Cold Drink (Reg)', price: 30, category: 'Drinks/Sides', imageKey: 'drink_01', description: 'Regular serving drink.' },
-    { id: 'd1_500', name: 'Cold Drink (500ml)', price: 60, category: 'Drinks/Sides', imageKey: 'drink_01', description: '500ml drink bottle.' },
-    { id: 'd1_1', name: 'Cold Drink (1 Ltr)', price: 80, category: 'Drinks/Sides', imageKey: 'drink_01', description: '1 Liter drink bottle.' },
-    { id: 'd1_15', name: 'Cold Drink (1.5 Ltr)', price: 100, category: 'Drinks/Sides', imageKey: 'drink_01', description: '1.5 Liter drink bottle.' },
-    { id: 'w_s', name: 'Mineral Water (S)', price: 40, category: 'Drinks/Sides', imageKey: 'drink_01', description: 'Small water bottle.' },
-    { id: 'w_l', name: 'Mineral Water (L)', price: 70, category: 'Drinks/Sides', imageKey: 'drink_01', description: 'Large water bottle.' },
+
+    // --- PASTA ---
+    {
+        id: 'ps_tk',
+        name: 'Tikka Pasta',
+        category: 'Pasta',
+        imageKey: 'pasta_01',
+        description: 'Tender pasta tossed in a robust tikka-spiced red sauce.',
+        sizes: [
+            { name: 'Half', price: 500 },
+            { name: 'Full', price: 750 }
+        ]
+    },
+    {
+        id: 'ps_m',
+        name: 'Chicken Cheese Macroni',
+        category: 'Pasta',
+        imageKey: 'pasta_01',
+        description: 'Creamy macaroni loaded with chicken and melted mozzarella.',
+        sizes: [
+            { name: 'Half', price: 500 },
+            { name: 'Full', price: 750 }
+        ]
+    },
+    {
+        id: 'ps_cr',
+        name: 'Chicken Crispy Pasta',
+        category: 'Pasta',
+        imageKey: 'pasta_01',
+        description: 'Silky pasta topped with golden crispy chicken bits.',
+        sizes: [
+            { name: 'Half', price: 550 },
+            { name: 'Full', price: 850 }
+        ]
+    },
+
+
+    // --- CHICKEN BROAST ---
+    { id: 'c_lp', name: 'Chicken Leg Piece', price: 370, category: 'Chicken', imageKey: 'chicken_01', description: 'Juicy, deep-fried leg piece with a spicy Lahori crunch.' },
+    { id: 'c_cp', name: 'Chicken Chest Piece', price: 450, category: 'Chicken', imageKey: 'chicken_01', description: 'Tender chicken chest piece fried to golden perfection.' },
+
+    // --- RICE ---
+    { id: 'r_ms', name: 'Masala Rice', price: 600, category: 'Rice', imageKey: 'rice_01', description: 'Fragrant basmati rice cooked with aromatic desi spices.' },
+    { id: 'r_cr', name: 'Crispy Rice', price: 650, category: 'Rice', imageKey: 'rice_01', description: 'Savory rice platter topped with spicy crispy chicken chunks.' },
+    { id: 'r_ef', name: 'Egg Fried Rice', price: 600, category: 'Rice', imageKey: 'rice_01', description: 'Wok-tossed rice with fluffy eggs and garden fresh veggies.' },
+    { id: 'r_ans', name: 'Al Noor Special Rice', price: 690, category: 'Rice', imageKey: 'rice_special', description: 'Our signature rice platter with a blend of special spices.' },
+
+    // --- FRIES ---
+    { id: 'f_ld', name: 'Loader Fries', price: 390, category: 'Fries', imageKey: 'sides_01', description: 'Fries drenched in cheese sauce, olives, and jalapeños.' },
+    { id: 'f_ch', name: 'Cheese Fries', price: 350, category: 'Fries', imageKey: 'sides_01', description: 'Crispy hot fries smothered in warm, melted cheddar cheese.' },
+    { id: 'f_gr', name: 'Garlic Fries', price: 350, category: 'Fries', imageKey: 'sides_01', description: 'Classic fries tossed in a fragrant garlic and herb seasoning.' },
+    { id: 'f_lg', name: 'Fries (Large)', price: 400, category: 'Fries', imageKey: 'sides_01', description: 'A massive portion of our signature crispy golden fries.' },
+    { id: 'f_rg', name: 'Regular Fries', price: 300, category: 'Fries', imageKey: 'sides_01', description: 'The classic golden-fried potato sticks you know and love.' },
+
+    // --- WINGS & NUGGETS ---
+    { id: 'w_ht_6', name: 'Hot Wings (6 pcs)', price: 450, category: 'Wings', imageKey: 'chicken_01', description: 'Bite-sized chicken wings tossed in a fiery buffalo sauce.' },
+    { id: 'w_ht_12', name: 'Hot Wings (12 pcs)', price: 850, category: 'Wings', imageKey: 'chicken_01', description: 'Double the spice! A large serving of fiery buffalo wings.' },
+    { id: 'w_bbq_6', name: 'BBQ Wings (6 pcs)', price: 450, category: 'Wings', imageKey: 'chicken_01', description: 'Wings glazed in a sweet and tangy hickory BBQ sauce.' },
+    { id: 'w_bbq_12', name: 'BBQ Wings (12 pcs)', price: 850, category: 'Wings', imageKey: 'chicken_01', description: 'Piping hot wings drowned in a sweet and smoky BBQ glaze.' },
+    { id: 'w_jc_6', name: 'Juicy Wings (6 pcs)', price: 450, category: 'Wings', imageKey: 'chicken_01', description: 'Succulent wings lightly seasoned and fried to tenderness.' },
+    { id: 'w_jc_12', name: 'Juicy Wings (12 pcs)', price: 850, category: 'Wings', imageKey: 'chicken_01', description: 'Succulent and tender chicken wings, perfectly fried for sharing.' },
+    { id: 'n_6', name: 'Nuggets (6 pcs)', price: 300, category: 'Wings', imageKey: 'chicken_01', description: 'Classic golden-brown breaded chicken nuggets.' },
+    { id: 'n_12', name: 'Nuggets (12 pcs)', price: 550, category: 'Wings', imageKey: 'chicken_01', description: 'A family-sized portion of crispy, golden-fried chicken nuggets.' },
+
+    // --- COLD DRINKS ---
+    { id: 'd_rg', name: 'Regular Drink', price: 70, category: 'Drinks', imageKey: 'drink_01', description: 'Your choice of chilled carbonated soft drink.' },
+    { id: 'd_500', name: 'Drink (500ml)', price: 120, category: 'Drinks', imageKey: 'drink_01', description: 'Stay refreshed with a chilled 500ml bottle of your favorite soda.' },
+    { id: 'd_1', name: 'Drink (1 Ltr)', price: 150, category: 'Drinks', imageKey: 'drink_01', description: 'Perfect for sharing! Chilled 1 Liter bottle of soft drink.' },
+    { id: 'd_15', name: 'Drink (1.5 Ltr)', price: 220, category: 'Drinks', imageKey: 'drink_01', description: 'Maximum refreshment! Large 1.5 Liter bottle for the whole family.' },
+    { id: 'w_lg', name: 'Mineral Water (L)', price: 150, category: 'Drinks', imageKey: 'drink_01', description: 'Refreshing, pure mineral water to quench your thirst.' },
+    { id: 'w_sm', name: 'Mineral Water (S)', price: 90, category: 'Drinks', imageKey: 'drink_01', description: 'Stay hydrated on the go with our pure mineral water.' },
+
+    // --- SPECIAL ITEMS ---
+    { id: 'sp_sj', name: 'Chicken Sajji', price: 1500, category: 'Special Items', imageKey: 'chicken_sajji', description: 'Whole marinated chicken roasted on coal for hours.' },
+    { id: 'sp_mp', name: 'Matka Pizza', price: 700, category: 'Special Items', imageKey: 'pizza_matka', description: 'Indulge in a unique clay-pot baked cheesy pizza experience.' },
+
 ];
+
+
 
 
 
 const HomeScreen = () => {
+    const { colors } = useTheme();
+    const styles = React.useMemo(() => createStyles(colors), [colors]);
     const insets = useSafeAreaInsets();
     const navigation = useNavigation();
     const { addToCart, cart } = useCart();
@@ -118,106 +508,145 @@ const HomeScreen = () => {
     const [selectedCategory, setSelectedCategory] = useState('Deals'); // Default to Deals
     const [searchQuery, setSearchQuery] = useState('');
     const [prices, setPrices] = useState({});
-    const [deals, setDeals] = useState([]);
+    const [dynamicProducts, setDynamicProducts] = useState([]);
     const [dealCategoryName, setDealCategoryName] = useState('Deals');
     const [editingProduct, setEditingProduct] = useState(null);
     const [newPrice, setNewPrice] = useState('');
+    const [newSizes, setNewSizes] = useState({}); // { 'S': '700', 'M': '1100' }
     const [savingPrice, setSavingPrice] = useState(false);
 
-    // Add Deal States
-    const [addingDeal, setAddingDeal] = useState(false);
-    const [newDeal, setNewDeal] = useState({ name: '', description: '', price: '' });
-    const [savingDeal, setSavingDeal] = useState(false);
+    // Add Item / Deal States
+    const [addingItem, setAddingItem] = useState(false);
+    const [newItem, setNewItem] = useState({ name: '', description: '', price: '', category: 'Burgers' });
+    const [savingItem, setSavingItem] = useState(false);
 
     // Rename Category States
     const [renamingCategory, setRenamingCategory] = useState(false);
     const [newCategoryName, setNewCategoryName] = useState('');
     const [savingCategory, setSavingCategory] = useState(false);
 
+    // Size Selection Modal States
+    const [selectedProductForSize, setSelectedProductForSize] = useState(null);
+    const [isSizeModalVisible, setIsSizeModalVisible] = useState(false);
+
     React.useEffect(() => {
+
         const pricesRef = doc(db, 'settings', 'prices');
         const unsubscribePrices = onSnapshot(pricesRef, (docSnap) => {
             if (docSnap.exists()) {
                 setPrices(docSnap.data());
             }
+        }, (error) => {
+            console.warn("Firestore Prices Sync Error:", error.message);
         });
 
         const configRef = doc(db, 'settings', 'store_config');
         const unsubscribeConfig = onSnapshot(configRef, (docSnap) => {
             if (docSnap.exists() && docSnap.data().dealCategoryName) {
-                setDealCategoryName(docSnap.data().dealCategoryName);
+                const savedName = docSnap.data().dealCategoryName.trim();
+                const isOldRamadanOffer = /ram(a|za)dan\s+offer/i.test(savedName);
+                setDealCategoryName(isOldRamadanOffer ? 'Deals' : savedName);
             } else {
                 setDealCategoryName('Deals');
             }
+        }, (error) => {
+            console.warn("Firestore Config Sync Error:", error.message);
         });
 
         // REMOVED fetch from 'products' collection to use hardcoded PRODUCTS
         // This ensures the app works on slow internet.
         // We only fetch 'settings/prices' to keep prices updated.
 
-        const dealsRef = collection(db, 'special_deals');
-        const unsubscribeDeals = onSnapshot(dealsRef, (snapshot) => {
-            const fetchedDeals = snapshot.docs.map(doc => ({
+        const productsRef = collection(db, 'products');
+        const unsubscribeProducts = onSnapshot(productsRef, (snapshot) => {
+            const fetchedProducts = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data(),
-                isSpecialDeal: true, // Mark as special deal
-                category: 'Deals', // Assign to 'Deals' category
-                imageKey: 'deal_01' // Default image for deals
+                isDynamic: true // Mark as dynamic for letter icon rendering
             }));
-            setDeals(fetchedDeals);
+            setDynamicProducts(fetchedProducts);
+        }, (error) => {
+            // Handle permission denied or other errors gracefully
+            console.warn("Firestore Products Sync Error:", error.message);
         });
 
         return () => {
             unsubscribePrices();
-            unsubscribeDeals();
             unsubscribeConfig();
+            unsubscribeProducts();
         };
     }, []);
 
 
     const filteredProducts = useMemo(() => {
-        // Base products are hardcoded for speed
-        let baseProducts = [...PRODUCTS];
+        // Base products are hardcoded for speed, merged with dynamic ones
+        let baseProducts = [...PRODUCTS, ...dynamicProducts];
 
         // Apply updated prices from Firestore if they exist
-        const productsWithLivePrices = baseProducts.map(p => ({
-            ...p,
-            price: prices[p.id] || p.price
-        }));
+        const productsWithLivePrices = baseProducts.map(p => {
+            if (p.sizes && p.sizes.length > 0) {
+                return {
+                    ...p,
+                    sizes: p.sizes.map(s => ({
+                        ...s,
+                        price: prices[`${p.id}_${s.name}`] || s.price
+                    }))
+                };
+            }
+            return {
+                ...p,
+                price: prices[p.id] || p.price
+            };
+        });
 
-        // Merge with dynamic Deals
-        const finalProducts = selectedCategory === 'Deals'
-            ? deals
-            : productsWithLivePrices;
-
-        return finalProducts.filter(p =>
+        return productsWithLivePrices.filter(p =>
             p.category === selectedCategory &&
             (p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 p.description?.toLowerCase().includes(searchQuery.toLowerCase()))
         );
-    }, [selectedCategory, searchQuery, prices, deals]);
+    }, [selectedCategory, searchQuery, prices, dynamicProducts]);
 
     const handleEditPrice = (product) => {
         setEditingProduct(product);
-        setNewPrice(product.price.toString());
+        if (product.sizes) {
+            const sizePrices = {};
+            product.sizes.forEach(s => {
+                sizePrices[s.name] = (prices[`${product.id}_${s.name}`] || s.price).toString();
+            });
+            setNewSizes(sizePrices);
+        } else {
+            setNewPrice((prices[product.id] || product.price).toString());
+        }
     };
 
     const handleSavePrice = async () => {
-        if (!editingProduct || !newPrice) return;
-        const priceNum = Number(newPrice);
-        if (isNaN(priceNum) || priceNum < 0) {
-            Alert.alert("Invalid Price", "Please enter a valid positive number.");
-            return;
-        }
+        if (!editingProduct) return;
 
         setSavingPrice(true);
         try {
             const pricesRef = doc(db, 'settings', 'prices');
-            await setDoc(pricesRef, {
-                [editingProduct.id]: priceNum
-            }, { merge: true });
+            const priceUpdates = {};
+
+            if (editingProduct.sizes) {
+                Object.keys(newSizes).forEach(sizeName => {
+                    const priceNum = Number(newSizes[sizeName]);
+                    if (!isNaN(priceNum) && priceNum > 0) {
+                        priceUpdates[`${editingProduct.id}_${sizeName}`] = priceNum;
+                    }
+                });
+            } else {
+                const priceNum = Number(newPrice);
+                if (!isNaN(priceNum) && priceNum > 0) {
+                    priceUpdates[editingProduct.id] = priceNum;
+                }
+            }
+
+            if (Object.keys(priceUpdates).length > 0) {
+                await setDoc(pricesRef, priceUpdates, { merge: true });
+            }
             setEditingProduct(null);
             setNewPrice('');
+            setNewSizes({});
         } catch (error) {
             console.error("Error saving price:", error);
             Alert.alert("Error", "Could not save the price.");
@@ -226,40 +655,41 @@ const HomeScreen = () => {
         }
     };
 
-    const handleSaveNewDeal = async () => {
-        if (!newDeal.name || !newDeal.price || !newDeal.description) {
-            Alert.alert("Missing Fields", "Please fill out all fields for the deal.");
+    const handleSaveNewItem = async () => {
+        if (!newItem.name || !newItem.price || !newItem.description) {
+            Alert.alert("Missing Fields", "Please fill out all fields.");
             return;
         }
 
-        const priceNum = Number(newDeal.price);
+        const priceNum = Number(newItem.price);
         if (isNaN(priceNum) || priceNum <= 0) {
-            Alert.alert("Invalid Price", "Please enter a valid positive number for the deal.");
+            Alert.alert("Invalid Price", "Please enter a valid positive number.");
             return;
         }
 
-        setSavingDeal(true);
+        setSavingItem(true);
         try {
-            await addDoc(collection(db, 'special_deals'), {
-                name: newDeal.name,
-                description: newDeal.description,
+            await addDoc(collection(db, 'products'), {
+                name: newItem.name,
+                description: newItem.description,
                 price: priceNum,
+                category: newItem.category,
                 createdAt: new Date().toISOString()
             });
-            setAddingDeal(false);
-            setNewDeal({ name: '', description: '', price: '' });
+            setAddingItem(false);
+            setNewItem({ name: '', description: '', price: '', category: 'Burgers' });
         } catch (error) {
-            console.error("Error adding deal:", error);
-            Alert.alert("Error", "Could not save the special deal.");
+            console.error("Error saving item:", error);
+            Alert.alert("Error", "Could not save the item. Check your database permissions.");
         } finally {
-            setSavingDeal(false);
+            setSavingItem(false);
         }
     };
 
-    const handleDeleteDeal = async (dealId) => {
+    const handleDeleteProduct = (product) => {
         Alert.alert(
-            "Delete Deal",
-            "Are you sure you want to delete this special deal?",
+            "Delete Item",
+            `Are you sure you want to delete "${product.name}"?`,
             [
                 { text: "Cancel", style: "cancel" },
                 {
@@ -267,10 +697,10 @@ const HomeScreen = () => {
                     style: "destructive",
                     onPress: async () => {
                         try {
-                            await deleteDoc(doc(db, 'special_deals', dealId));
-                        } catch (error) {
-                            console.error("Error deleting deal:", error);
-                            Alert.alert("Error", "Could not delete the deal.");
+                            const coll = product.isSpecialDeal ? 'special_deals' : 'products';
+                            await deleteDoc(doc(db, coll, product.id));
+                        } catch (e) {
+                            Alert.alert("Error", "Could not delete item.");
                         }
                     }
                 }
@@ -313,7 +743,7 @@ const HomeScreen = () => {
             >
                 {isSelected ? (
                     <LinearGradient
-                        colors={COLORS.primaryGradient}
+                        colors={colors.primaryGradient}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={[styles.categoryItemSelected, { marginRight: 0 }]}
@@ -333,29 +763,39 @@ const HomeScreen = () => {
         );
     };
 
+    const handleAddToCart = (product) => {
+        if (product.sizes && product.sizes.length > 0) {
+            setSelectedProductForSize(product);
+            setIsSizeModalVisible(true);
+        } else {
+            addToCart(product);
+        }
+    };
+
+    const handleSelectSizeAndAdd = (size) => {
+        addToCart(selectedProductForSize, size);
+        setIsSizeModalVisible(false);
+        setSelectedProductForSize(null);
+    };
+
     const renderProduct = ({ item, index }) => {
         return (
-            <View style={{ position: 'relative' }}>
-                {isAdmin && item.isSpecialDeal && (
-                    <TouchableOpacity onPress={() => handleDeleteDeal(item.id)} style={{ position: 'absolute', top: 10, right: 10, zIndex: 10 }}>
-                        <Text style={{ fontSize: 20 }}>🗑️</Text>
-                    </TouchableOpacity>
-                )}
-                <ProductCard
-                    item={item}
-                    index={index}
-                    navigation={navigation}
-                    addToCart={addToCart}
-                    isAdmin={isAdmin && !item.isSpecialDeal}
-                    onEditPrice={handleEditPrice}
-                />
-            </View>
+            <ProductCard
+                item={item}
+                index={index}
+                addToCart={handleAddToCart}
+                isAdmin={isAdmin}
+                onEditPrice={handleEditPrice}
+                onDelete={handleDeleteProduct}
+            />
         );
     };
 
     return (
         <SplitScreen ratio={0.35} >
             <View style={[styles.container, { paddingTop: insets.top }]}>
+                {/* ... existing header ... */}
+
                 {/* Header Section */}
                 <View style={styles.header}>
                     <View style={styles.topRow}>
@@ -368,9 +808,18 @@ const HomeScreen = () => {
                             <View style={styles.menuBar} />
                         </TouchableOpacity>
 
-                        <View style={styles.titleWrapper}>
-                            <Text style={styles.appTitle}>AL-NOOR</Text>
-                            <View style={styles.goldLine} />
+                        <View style={styles.headerLogoContainer}>
+                            <View style={styles.logoCircle}>
+                                <Image
+                                    source={require('../../assets/logo.jpeg')}
+                                    style={styles.headerLogo}
+                                    resizeMode="cover"
+                                />
+                            </View>
+                            <View style={styles.titleWrapper}>
+                                <Text style={styles.appTitle}>AL-NOOR</Text>
+                                <View style={styles.goldLine} />
+                            </View>
                         </View>
 
                         <TouchableOpacity
@@ -395,6 +844,10 @@ const HomeScreen = () => {
                             placeholderTextColor="rgba(255,255,255,0.6)"
                             value={searchQuery}
                             onChangeText={setSearchQuery}
+                            underlineColorAndroid="transparent"
+                            autoComplete="off"
+                            autoCorrect={false}
+                            importantForAutofill="no"
                         />
                     </View>
 
@@ -417,22 +870,32 @@ const HomeScreen = () => {
                                     <Text style={styles.sectionTitle}>
                                         {selectedCategory === 'Deals' ? dealCategoryName : t(`categories.${selectedCategory}`)} {t('specials')}
                                     </Text>
-                                    {isAdmin && selectedCategory === 'Deals' && (
+                                    {isAdmin && (
                                         <View style={{ flexDirection: 'row' }}>
-                                            <TouchableOpacity
-                                                style={[styles.addDealBtn, { backgroundColor: 'rgba(0,0,0,0.05)', marginRight: 10 }]}
-                                                onPress={() => {
-                                                    setNewCategoryName(dealCategoryName);
-                                                    setRenamingCategory(true);
-                                                }}
-                                            >
-                                                <Text style={[styles.addDealBtnText, { color: COLORS.primary }]}>✏️</Text>
-                                            </TouchableOpacity>
+                                            {selectedCategory === 'Deals' && (
+                                                <TouchableOpacity
+                                                    style={[styles.addDealBtn, { backgroundColor: 'rgba(0,0,0,0.05)', marginRight: 10 }]}
+                                                    onPress={() => {
+                                                        setNewCategoryName(dealCategoryName);
+                                                        setRenamingCategory(true);
+                                                    }}
+                                                >
+                                                    <Text style={[styles.addDealBtnText, { color: colors.primary }]}>✏️</Text>
+                                                </TouchableOpacity>
+                                            )}
                                             <TouchableOpacity
                                                 style={styles.addDealBtn}
-                                                onPress={() => setAddingDeal(true)}
+                                                onPress={() => {
+                                                    setAddingItem(true);
+                                                    setNewItem({
+                                                        name: '',
+                                                        description: '',
+                                                        price: '',
+                                                        category: selectedCategory
+                                                    });
+                                                }}
                                             >
-                                                <Text style={styles.addDealBtnText}>+ Add Deal</Text>
+                                                <Text style={styles.addDealBtnText}>+ {selectedCategory === 'Deals' ? t('addDeal') : 'Add Item'}</Text>
                                             </TouchableOpacity>
                                         </View>
                                     )}
@@ -471,18 +934,36 @@ const HomeScreen = () => {
                             <Text style={styles.modalSubtitle}>{editingProduct.name}</Text>
                         )}
 
-                        <View style={styles.priceInputContainer}>
-                            <Text style={styles.currencyPrefix}>{t('rs')}</Text>
-                            <TextInput
-                                style={styles.priceInput}
-                                value={newPrice}
-                                onChangeText={setNewPrice}
-                                keyboardType="numeric"
-                                placeholder="0"
-                                placeholderTextColor="#999"
-                                autoFocus
-                            />
-                        </View>
+                        {editingProduct && editingProduct.sizes ? (
+                            <ScrollView style={{ maxHeight: 300, width: '100%' }}>
+                                {editingProduct.sizes.map((s, idx) => (
+                                    <View key={idx} style={[styles.priceInputContainer, { marginBottom: 15 }]}>
+                                        <Text style={[styles.currencyPrefix, { minWidth: 60 }]}>{s.name}:</Text>
+                                        <TextInput
+                                            style={styles.priceInput}
+                                            value={newSizes[s.name]}
+                                            onChangeText={(val) => setNewSizes(prev => ({ ...prev, [s.name]: val }))}
+                                            keyboardType="numeric"
+                                            placeholder="0"
+                                            placeholderTextColor="#999"
+                                        />
+                                    </View>
+                                ))}
+                            </ScrollView>
+                        ) : (
+                            <View style={styles.priceInputContainer}>
+                                <Text style={styles.currencyPrefix}>{t('rs')}</Text>
+                                <TextInput
+                                    style={styles.priceInput}
+                                    value={newPrice}
+                                    onChangeText={setNewPrice}
+                                    keyboardType="numeric"
+                                    placeholder="0"
+                                    placeholderTextColor="#999"
+                                    autoFocus
+                                />
+                            </View>
+                        )}
 
                         <View style={styles.modalActions}>
                             <TouchableOpacity
@@ -498,84 +979,9 @@ const HomeScreen = () => {
                                 disabled={savingPrice}
                             >
                                 {savingPrice ? (
-                                    <ActivityIndicator color={COLORS.secondary} size="small" />
+                                    <ActivityIndicator color={colors.secondary} size="small" />
                                 ) : (
                                     <Text style={styles.modalBtnSaveText}>Save</Text>
-                                )}
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </KeyboardAvoidingView>
-            </Modal >
-
-            {/* Add Deal Modal */}
-            < Modal
-                visible={addingDeal}
-                transparent={true}
-                animationType="slide"
-                onRequestClose={() => setAddingDeal(false)}
-            >
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                    style={styles.modalOverlay}
-                >
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Add Special Deal</Text>
-                        <Text style={styles.modalSubtitle}>Create a new deal for all users</Text>
-
-                        <View style={styles.inputContainer}>
-                            <TextInput
-                                style={styles.textInput}
-                                value={newDeal.name}
-                                onChangeText={(txt) => setNewDeal({ ...newDeal, name: txt })}
-                                placeholder="Deal Name (e.g. Ramadan Special)"
-                                placeholderTextColor="#999"
-                            />
-                        </View>
-
-                        <View style={[styles.inputContainer, { height: 80 }]}>
-                            <TextInput
-                                style={[styles.textInput, { textAlignVertical: 'top' }]}
-                                value={newDeal.description}
-                                onChangeText={(txt) => setNewDeal({ ...newDeal, description: txt })}
-                                placeholder="Description (e.g. 2 Zinger Burgers + Fries)"
-                                placeholderTextColor="#999"
-                                multiline
-                            />
-                        </View>
-
-                        <View style={styles.priceInputContainer}>
-                            <Text style={styles.currencyPrefix}>{t('rs')}</Text>
-                            <TextInput
-                                style={styles.priceInput}
-                                value={newDeal.price}
-                                onChangeText={(txt) => setNewDeal({ ...newDeal, price: txt })}
-                                keyboardType="numeric"
-                                placeholder="Price"
-                                placeholderTextColor="#999"
-                            />
-                        </View>
-
-                        <View style={styles.modalActions}>
-                            <TouchableOpacity
-                                style={[styles.modalBtn, styles.modalBtnCancel]}
-                                onPress={() => {
-                                    setAddingDeal(false);
-                                    setNewDeal({ name: '', description: '', price: '' });
-                                }}
-                                disabled={savingDeal}
-                            >
-                                <Text style={styles.modalBtnCancelText}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.modalBtn, styles.modalBtnSave, savingDeal && { opacity: 0.7 }]}
-                                onPress={handleSaveNewDeal}
-                                disabled={savingDeal}
-                            >
-                                {savingDeal ? (
-                                    <ActivityIndicator color={COLORS.secondary} size="small" />
-                                ) : (
-                                    <Text style={styles.modalBtnSaveText}>Add Deal</Text>
                                 )}
                             </TouchableOpacity>
                         </View>
@@ -603,7 +1009,7 @@ const HomeScreen = () => {
                                 style={styles.textInput}
                                 value={newCategoryName}
                                 onChangeText={setNewCategoryName}
-                                placeholder="e.g. Ramadan Offer"
+                                placeholder="e.g. Weekend Specials"
                                 placeholderTextColor="#999"
                                 autoFocus
                             />
@@ -623,7 +1029,7 @@ const HomeScreen = () => {
                                 disabled={savingCategory}
                             >
                                 {savingCategory ? (
-                                    <ActivityIndicator color={COLORS.secondary} size="small" />
+                                    <ActivityIndicator color={colors.secondary} size="small" />
                                 ) : (
                                     <Text style={styles.modalBtnSaveText}>Save</Text>
                                 )}
@@ -631,15 +1037,282 @@ const HomeScreen = () => {
                         </View>
                     </View>
                 </KeyboardAvoidingView>
-            </Modal >
+            </Modal>
+
+            {/* Add Item/Deal Modal */}
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={addingItem}
+                onRequestClose={() => setAddingItem(false)}
+            >
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    style={styles.modalOverlay}
+                >
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>{newItem.category === 'Deals' ? t('addDeal') : 'Add New Item'}</Text>
+                        <Text style={styles.modalSubtitle}>Target Category: {newItem.category}</Text>
+
+                        <View style={styles.inputContainer}>
+                            <TextInput
+                                style={styles.textInput}
+                                placeholder="Item Name"
+                                placeholderTextColor="#666"
+                                value={newItem.name}
+                                onChangeText={(txt) => setNewItem({ ...newItem, name: txt })}
+                            />
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <TextInput
+                                style={styles.textInput}
+                                placeholder="Description"
+                                placeholderTextColor="#666"
+                                value={newItem.description}
+                                onChangeText={(txt) => setNewItem({ ...newItem, description: txt })}
+                            />
+                        </View>
+
+                        <View style={styles.priceInputContainer}>
+                            <Text style={styles.currencyPrefix}>Rs.</Text>
+                            <TextInput
+                                style={styles.priceInput}
+                                placeholder="0"
+                                placeholderTextColor="#666"
+                                keyboardType="numeric"
+                                value={newItem.price}
+                                onChangeText={(txt) => setNewItem({ ...newItem, price: txt })}
+                            />
+                        </View>
+
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity
+                                style={[styles.modalBtn, styles.modalBtnCancel]}
+                                onPress={() => setAddingItem(false)}
+                            >
+                                <Text style={styles.modalBtnCancelText}>{t('cancel')}</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.modalBtn, styles.modalBtnSave]}
+                                onPress={handleSaveNewItem}
+                                disabled={savingItem}
+                            >
+                                {savingItem ? (
+                                    <ActivityIndicator color={colors.secondary} size="small" />
+                                ) : (
+                                    <Text style={styles.modalBtnSaveText}>{t('saveChanges')}</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
+            {/* Size Selection Modal */}
+            <Modal
+                visible={isSizeModalVisible}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setIsSizeModalVisible(false)}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setIsSizeModalVisible(false)}
+                >
+                    <BlurView intensity={80} tint="dark" style={styles.sizeModalContent}>
+                        <View style={styles.modalHeader}>
+                            <View style={styles.modalBar} />
+                            <Text style={styles.sizeModalTitle}>{t('selectSize')}</Text>
+                            {selectedProductForSize && (
+                                <Text style={styles.sizeModalProductName}>{selectedProductForSize.name}</Text>
+                            )}
+                        </View>
+
+                        <View style={styles.sizesContainer}>
+                            {selectedProductForSize?.sizes?.map((size, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={styles.sizeOption}
+                                    onPress={() => handleSelectSizeAndAdd(size)}
+                                    activeOpacity={0.8}
+                                >
+                                    <View style={styles.sizeInfo}>
+                                        <View style={styles.sizeLabelCircle}>
+                                            <Text style={styles.sizeName}>
+                                                {(size.name === 'Small' || size.name === 'S') ? 'S' :
+                                                    (size.name === 'Medium' || size.name === 'M') ? 'M' :
+                                                        (size.name === 'Large' || size.name === 'L') ? 'L' :
+                                                            size.name.charAt(0).toUpperCase()}
+                                            </Text>
+                                        </View>
+                                        <View style={styles.sizeTextContainer}>
+                                            <Text style={styles.sizeFullLabel}>{t(size.name.toLowerCase()) || size.name}</Text>
+                                            <Text style={styles.sizePrice}>Rs. {size.price}</Text>
+                                        </View>
+                                    </View>
+                                    <View style={styles.sizeAddIcon}>
+                                        <Text style={styles.sizeAddText}>+</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+
+                        <TouchableOpacity
+                            style={styles.closeModalBtn}
+                            onPress={() => setIsSizeModalVisible(false)}
+                        >
+                            <Text style={styles.closeModalBtnText}>{t('cancel')}</Text>
+                        </TouchableOpacity>
+                    </BlurView>
+                </TouchableOpacity>
+            </Modal>
         </SplitScreen >
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     container: {
         flex: 1,
     },
+    // ... existing styles ...
+    sizeModalContent: {
+        width: '100%',
+        position: 'absolute',
+        bottom: 0,
+        borderTopLeftRadius: 35,
+        borderTopRightRadius: 35,
+        padding: 24,
+        paddingBottom: Platform.OS === 'ios' ? 45 : 30,
+        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+        borderWidth: 1.5,
+        borderColor: 'rgba(255, 215, 0, 0.2)',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: -10 },
+                shadowOpacity: 0.5,
+                shadowRadius: 20,
+            },
+            android: {
+                elevation: 20,
+            },
+            web: {
+                boxShadow: '0px -10px 40px rgba(0, 0, 0, 0.5)'
+            }
+        })
+    },
+    modalHeader: {
+        alignItems: 'center',
+        marginBottom: 25,
+    },
+    modalBar: {
+        width: 50,
+        height: 6,
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        borderRadius: 3,
+        marginBottom: 20,
+    },
+    sizeModalTitle: {
+        fontSize: 26,
+        fontWeight: '900',
+        color: colors.secondary,
+        letterSpacing: 1,
+    },
+    sizeModalProductName: {
+        fontSize: 15,
+        color: colors.accent,
+        marginTop: 6,
+        fontWeight: '600',
+        opacity: 0.9,
+    },
+    sizesContainer: {
+        marginBottom: 25,
+    },
+    sizeOption: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        padding: 22,
+        borderRadius: 20,
+        marginBottom: 20,
+        borderWidth: 1.5,
+        borderColor: 'rgba(255,255,255,0.08)',
+        // Shadow for premium depth
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 5,
+            },
+            android: {
+                elevation: 4,
+            }
+        })
+    },
+    sizeInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    sizeLabelCircle: {
+        width: 45,
+        height: 45,
+        borderRadius: 22.5,
+        backgroundColor: `${colors.primary}33`,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 15,
+        borderWidth: 1,
+        borderColor: colors.primary,
+    },
+    sizeName: {
+        fontSize: 22,
+        fontWeight: '900',
+        color: colors.primary,
+    },
+    sizeTextContainer: {
+        justifyContent: 'center',
+    },
+    sizeFullLabel: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: colors.secondary,
+    },
+    sizePrice: {
+        fontSize: 16,
+        color: colors.accent,
+        marginTop: 2,
+        fontWeight: '700',
+    },
+    sizeAddIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        backgroundColor: colors.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    sizeAddText: {
+        color: colors.secondary,
+        fontSize: 24,
+        fontWeight: 'bold',
+    },
+    closeModalBtn: {
+        alignItems: 'center',
+        padding: 10,
+    },
+    closeModalBtnText: {
+        color: 'rgba(255,255,255,0.5)',
+        fontSize: 16,
+        fontWeight: 'bold',
+        letterSpacing: 1,
+    },
+
+
     header: {
         paddingHorizontal: SIZES.padding,
         paddingBottom: 10,
@@ -658,24 +1331,44 @@ const styles = StyleSheet.create({
     menuBar: {
         height: 3,
         width: 25,
-        backgroundColor: COLORS.secondary,
+        backgroundColor: colors.secondary,
         marginVertical: 2,
         borderRadius: 2,
     },
-    titleWrapper: {
+    headerLogoContainer: {
+        flexDirection: 'row',
         alignItems: 'center',
     },
+    logoCircle: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: colors.secondary,
+        marginRight: 10,
+        padding: 2,
+        borderWidth: 1,
+        borderColor: colors.accent,
+        overflow: 'hidden',
+    },
+    headerLogo: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 18,
+    },
+    titleWrapper: {
+        alignItems: 'flex-start',
+    },
     appTitle: {
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: 'bold',
-        color: COLORS.accent,
-        letterSpacing: 2,
+        color: colors.secondary,
+        letterSpacing: 1.5,
     },
     goldLine: {
         height: 2,
-        width: 30,
-        backgroundColor: COLORS.accent,
-        marginTop: -2,
+        width: 25,
+        backgroundColor: colors.accent,
+        marginTop: -1,
     },
     cartBtn: {
         width: 45,
@@ -692,7 +1385,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: -5,
         right: -5,
-        backgroundColor: COLORS.accent,
+        backgroundColor: colors.accent,
         borderRadius: 10,
         minWidth: 20,
         height: 20,
@@ -700,10 +1393,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 2,
-        borderColor: COLORS.primary,
+        borderColor: colors.primary,
     },
     badgeText: {
-        color: COLORS.primary,
+        color: colors.primary,
         fontSize: 10,
         fontWeight: 'bold',
     },
@@ -716,15 +1409,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         height: 55,
         marginBottom: 5,
-        backgroundColor: COLORS.glass,
+        backgroundColor: 'transparent',
         borderWidth: 1,
-        borderColor: COLORS.glassBorder,
-        // Soft glowing shadow
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 2,
+        borderColor: 'rgba(255, 255, 255, 0.22)',
     },
     searchIcon: {
         fontSize: 18,
@@ -733,7 +1420,17 @@ const styles = StyleSheet.create({
     },
     searchInput: {
         flex: 1,
-        color: COLORS.textDark,
+        height: '100%',
+        paddingVertical: 0,
+        paddingHorizontal: 0,
+        margin: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0)',
+        borderWidth: 0,
+        borderColor: 'transparent',
+        borderRadius: 0,
+        outlineStyle: 'none',
+        boxShadow: 'none',
+        color: colors.textDark,
         fontSize: 16,
         fontWeight: '500',
     },
@@ -762,24 +1459,33 @@ const styles = StyleSheet.create({
         marginRight: 12,
         borderRadius: 25,
         height: 45,
-        // Bold shadow for active gradient
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 6,
-        elevation: 3,
+        // Bold shadow for active gradient - platform aware
+        ...Platform.select({
+            ios: {
+                shadowColor: colors.primary,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 6,
+            },
+            android: {
+                elevation: 3,
+            },
+            web: {
+                boxShadow: `0px 4px 6px ${colors.primary}33` // 33 is 20% opacity
+            }
+        })
     },
     categoryIcon: {
         fontSize: 20,
         marginRight: 8,
     },
     categoryText: {
-        color: COLORS.textDark,
+        color: colors.textDark,
         fontWeight: '600',
         fontSize: 15,
     },
     categoryTextSelected: {
-        color: COLORS.secondary,
+        color: colors.secondary,
         fontWeight: 'bold',
         fontSize: 15,
     },
@@ -796,10 +1502,10 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         ...FONTS.h2,
-        color: COLORS.textDark,
+        color: colors.textDark,
     },
     seeAll: {
-        color: COLORS.primary,
+        color: colors.primary,
         fontWeight: 'bold',
         fontSize: 14,
     },
@@ -820,13 +1526,13 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     addDealBtn: {
-        backgroundColor: COLORS.primary,
+        backgroundColor: colors.primary,
         paddingHorizontal: 15,
         paddingVertical: 8,
         borderRadius: 15,
     },
     addDealBtnText: {
-        color: COLORS.secondary,
+        color: colors.secondary,
         fontWeight: 'bold',
         fontSize: 14,
     },
@@ -838,24 +1544,33 @@ const styles = StyleSheet.create({
     },
     modalContent: {
         width: '80%',
-        backgroundColor: '#0F172A',
+        backgroundColor: colors.surface,
         borderRadius: 20,
         padding: 24,
         alignItems: 'center',
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.2,
-        shadowRadius: 15,
-        elevation: 10,
+        ...Platform.select({
+            ios: {
+                shadowColor: colors.primary,
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.2,
+                shadowRadius: 15,
+            },
+            android: {
+                elevation: 10,
+            },
+            web: {
+                boxShadow: `0px 10px 15px ${colors.primary}33`
+            }
+        })
     },
     modalTitle: {
         ...FONTS.h2,
-        color: COLORS.secondary,
+        color: colors.secondary,
         marginBottom: 5,
     },
     modalSubtitle: {
         fontSize: 14,
-        color: COLORS.textLight,
+        color: colors.textLight,
         marginBottom: 20,
         textAlign: 'center',
     },
@@ -873,7 +1588,7 @@ const styles = StyleSheet.create({
     textInput: {
         flex: 1,
         fontSize: 16,
-        color: COLORS.secondary,
+        color: colors.secondary,
     },
     priceInputContainer: {
         flexDirection: 'row',
@@ -890,13 +1605,13 @@ const styles = StyleSheet.create({
     currencyPrefix: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: COLORS.primary,
+        color: colors.primary,
         marginRight: 10,
     },
     priceInput: {
         flex: 1,
         fontSize: 18,
-        color: COLORS.secondary,
+        color: colors.secondary,
         fontWeight: '500',
     },
     modalActions: {
@@ -916,7 +1631,7 @@ const styles = StyleSheet.create({
         marginRight: 10,
     },
     modalBtnSave: {
-        backgroundColor: COLORS.primary,
+        backgroundColor: colors.primary,
         marginLeft: 10,
     },
     modalBtnCancelText: {

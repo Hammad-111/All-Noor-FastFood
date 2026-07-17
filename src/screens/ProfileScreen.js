@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Animated, Image, Platform, Alert, Modal, ActivityIndicator, TextInput, KeyboardAvoidingView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import SplitScreen from '../components/SplitScreen';
-import { COLORS, SIZES } from '../constants/theme';
+import { SIZES } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import { useLanguage } from '../context/LanguageContext';
 import { useToast } from '../context/ToastContext';
@@ -14,6 +15,8 @@ import { doc, setDoc } from 'firebase/firestore';
 import { BlurView } from 'expo-blur';
 
 const ProfileScreen = () => {
+    const { colors } = useTheme();
+    const styles = React.useMemo(() => createStyles(colors), [colors]);
     const insets = useSafeAreaInsets();
     const navigation = useNavigation();
     const { t, toggleLanguage, language } = useLanguage();
@@ -85,12 +88,12 @@ const ProfileScreen = () => {
     };
 
     const menuItems = [
-        { id: '1', title: t('myOrders'), icon: '📦', action: () => navigation.navigate('SettingDetail', { title: t('myOrders') }) },
-        { id: '2', title: t('paymentMethods'), icon: '💳', action: () => navigation.navigate('SettingDetail', { title: t('paymentMethods') }) },
-        { id: '3', title: t('deliveryAddressMenu'), icon: '📍', action: () => navigation.navigate('SettingDetail', { title: t('deliveryAddressMenu') }) },
+        { id: '1', title: t('myOrders'), icon: '📦', action: () => navigation.navigate('SettingDetail', { section: 'orders', title: t('myOrders') }) },
+        { id: '2', title: t('paymentMethods'), icon: '💳', action: () => navigation.navigate('SettingDetail', { section: 'payments', title: t('paymentMethods') }) },
+        { id: '3', title: t('deliveryAddressMenu'), icon: '📍', action: () => navigation.navigate('SettingDetail', { section: 'address', title: t('deliveryAddressMenu') }) },
         { id: '4', title: t('changeLanguage'), icon: '🌐', value: language === 'en' ? 'Urdu' : 'Urdu (اردو)', action: handleLanguageToggle },
-        { id: '5', title: t('settings'), icon: '⚙️', action: () => navigation.navigate('SettingDetail', { title: t('settings') }) },
-        { id: '6', title: t('support'), icon: '🎧', action: () => navigation.navigate('SettingDetail', { title: t('support') }) },
+        { id: '5', title: t('settings'), icon: '⚙️', action: () => navigation.navigate('SettingDetail', { section: 'settings', title: t('settings') }) },
+        { id: '6', title: t('support'), icon: '🎧', action: () => navigation.navigate('SettingDetail', { section: 'support', title: t('support') }) },
     ];
 
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -118,7 +121,7 @@ const ProfileScreen = () => {
             Animated.timing(rotateAnim, {
                 toValue: 1,
                 duration: 4000,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             })
         ).start();
 
@@ -128,12 +131,12 @@ const ProfileScreen = () => {
                 Animated.timing(pulseAnim, {
                     toValue: 1.05,
                     duration: 1500,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(pulseAnim, {
                     toValue: 1,
                     duration: 1500,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 })
             ])
         ).start();
@@ -165,7 +168,7 @@ const ProfileScreen = () => {
                             <View style={styles.rotatingBorderWrapper}>
                                 <Animated.View style={[styles.rotatingBorder, { transform: [{ rotate: spin }] }]}>
                                     <LinearGradient
-                                        colors={[COLORS.accent, 'transparent', COLORS.primary, 'transparent']}
+                                        colors={[colors.accent, 'transparent', colors.primary, 'transparent']}
                                         style={styles.gradient}
                                     />
                                 </Animated.View>
@@ -182,7 +185,7 @@ const ProfileScreen = () => {
                             <Text style={styles.userName}>{userData?.name || (user ? t('alNoorCustomer') : t('appName'))}</Text>
                             {user && (
                                 <TouchableOpacity onPress={handleEditProfile} style={{ marginLeft: 8 }}>
-                                    <Icon name="pencil" size={16} color={COLORS.accent} />
+                                    <Icon name="pencil" size={16} color={colors.accent} />
                                 </TouchableOpacity>
                             )}
                         </View>
@@ -234,37 +237,34 @@ const ProfileScreen = () => {
                             ))}
 
 
-                            {/* Developer Credits - Professional Method */}
+                            <Text style={styles.devSectionLabel}>
+                                {language === 'ur' ? 'ایپ کریڈٹس' : 'APP CREDITS'}
+                            </Text>
                             <TouchableOpacity
-                                activeOpacity={0.9}
+                                activeOpacity={0.75}
                                 style={styles.devCardWrapper}
                                 onPress={() => navigation.navigate('DeveloperPortfolio')}
+                                accessibilityRole="button"
+                                accessibilityLabel="Developer information"
                             >
                                 <LinearGradient
-                                    colors={['rgba(255, 215, 0, 0.05)', 'rgba(255, 215, 0, 0.1)']}
+                                    colors={['rgba(255,255,255,0.055)', 'rgba(255,255,255,0.025)']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
                                     style={styles.devCard}
                                 >
-                                    <View style={styles.devHeader}>
-                                        <View style={styles.devIconBox}>
-                                            <Image
-                                                source={require('../../assets/Developer.jpeg')}
-                                                style={styles.devAvatarSmall}
-                                                resizeMode="cover"
-                                            />
-                                        </View>
-                                        <View>
-                                            <Text style={styles.devName}>Hammad Javed</Text>
-                                            <Text style={styles.devRole}>Software Engineer</Text>
-                                        </View>
+                                    <View style={styles.devIconBox}>
+                                        <Icon name="code-slash-outline" size={22} color={colors.accent} />
                                     </View>
-
-                                    <View style={styles.devBadgeContainer}>
-                                        <Text style={styles.devBadgeText}>DEVELOPER</Text>
+                                    <View style={styles.devDetails}>
+                                        <Text style={styles.devMeta}>
+                                            {language === 'ur' ? 'تیار کردہ' : 'DEVELOPED BY'}
+                                        </Text>
+                                        <Text style={styles.devName}>Hammad Javed</Text>
+                                        <Text style={styles.devRole}>Software Engineer</Text>
                                     </View>
-
-                                    <View style={styles.devClickHint}>
-                                        <Text style={styles.devClickText}>{language === 'ur' ? 'پورٹ فولیو دیکھیں' : 'VIEW PORTFOLIO'}</Text>
-                                        <Icon name="chevron-forward" size={12} color={COLORS.accent} />
+                                    <View style={styles.devArrow}>
+                                        <Icon name="chevron-forward" size={18} color="rgba(255,255,255,0.45)" />
                                     </View>
                                 </LinearGradient>
                             </TouchableOpacity>
@@ -383,7 +383,7 @@ const ProfileScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     main: { flex: 1 },
     container: { flex: 1 },
     header: {
@@ -420,16 +420,25 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
         borderRadius: 55,
-        backgroundColor: COLORS.secondary,
+        backgroundColor: colors.secondary,
         borderWidth: 2,
         borderColor: 'rgba(255,255,255,0.1)',
         justifyContent: 'center',
         alignItems: 'center',
         overflow: 'hidden',
-        elevation: 5,
-        shadowColor: COLORS.primary,
-        shadowOpacity: 0.2,
-        shadowRadius: 10,
+        ...Platform.select({
+            ios: {
+                shadowColor: colors.primary,
+                shadowOpacity: 0.2,
+                shadowRadius: 10,
+            },
+            android: {
+                elevation: 5,
+            },
+            web: {
+                boxShadow: `0px 0px 10px ${colors.primary}33` // 33 is 20% opacity
+            }
+        })
     },
     avatarImage: {
         width: '100%',
@@ -438,12 +447,12 @@ const styles = StyleSheet.create({
     avatarText: {
         fontSize: 34,
         fontWeight: 'bold',
-        color: COLORS.primary,
+        color: colors.primary,
     },
     userName: {
         fontSize: 22,
         fontWeight: 'bold',
-        color: COLORS.secondary,
+        color: colors.secondary,
         marginTop: 15,
     },
     badgeContainer: {
@@ -457,7 +466,7 @@ const styles = StyleSheet.create({
     },
     userBadge: {
         fontSize: 10,
-        color: COLORS.secondary,
+        color: colors.secondary,
         fontWeight: 'bold',
         letterSpacing: 1.2,
     },
@@ -471,7 +480,7 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: COLORS.secondary,
+        color: colors.secondary,
         marginBottom: 15,
         marginTop: 10,
     },
@@ -502,11 +511,11 @@ const styles = StyleSheet.create({
     menuTitle: {
         fontSize: 15,
         fontWeight: '600',
-        color: COLORS.secondary,
+        color: colors.secondary,
     },
     menuValue: {
         fontSize: 12,
-        color: COLORS.accent,
+        color: colors.accent,
         fontWeight: 'bold',
         marginTop: 2,
     },
@@ -528,92 +537,67 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 16,
     },
-    // Developer Card Styles
+    devSectionLabel: {
+        marginTop: 36,
+        marginBottom: 10,
+        marginLeft: 4,
+        color: 'rgba(255,255,255,0.42)',
+        fontSize: 10,
+        fontWeight: '800',
+        letterSpacing: 1.5,
+    },
     devCardWrapper: {
-        marginTop: 40,
-        borderRadius: 25,
+        borderRadius: 18,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(255, 215, 0, 0.2)',
-        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+        borderColor: 'rgba(255,255,255,0.09)',
+        backgroundColor: 'rgba(255,255,255,0.025)',
     },
     devCard: {
-        padding: 20,
-    },
-    devHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 15,
+        paddingHorizontal: 16,
+        paddingVertical: 15,
     },
     devIconBox: {
-        width: 45,
-        height: 45,
-        borderRadius: 12,
-        backgroundColor: 'rgba(255, 215, 0, 0.1)',
+        width: 44,
+        height: 44,
+        borderRadius: 14,
+        backgroundColor: 'rgba(255,215,0,0.09)',
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 15,
-        overflow: 'hidden',
+        marginRight: 13,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: 'rgba(255,215,0,0.16)',
     },
-    devAvatarSmall: {
-        width: '100%',
-        height: '100%',
+    devDetails: {
+        flex: 1,
+    },
+    devMeta: {
+        color: 'rgba(255,255,255,0.42)',
+        fontSize: 8,
+        fontWeight: '800',
+        letterSpacing: 1.25,
+        marginBottom: 3,
     },
     devName: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: COLORS.secondary,
+        fontSize: 15,
+        fontWeight: '700',
+        color: colors.secondary,
     },
     devRole: {
-        fontSize: 13,
-        color: COLORS.accent,
-        fontWeight: '600',
-        letterSpacing: 0.5,
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.52)',
+        fontWeight: '500',
+        marginTop: 2,
     },
-    devDivider: {
-        height: 1,
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        marginBottom: 15,
-    },
-    devInfoRow: {
-        flexDirection: 'row',
+    devArrow: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        backgroundColor: 'rgba(255,255,255,0.045)',
         alignItems: 'center',
-        marginBottom: 8,
-    },
-    devInfoText: {
-        fontSize: 13,
-        color: 'rgba(255, 255, 255, 0.7)',
-        marginLeft: 10,
-    },
-    devBadgeContainer: {
-        position: 'absolute',
-        top: 20,
-        right: 15,
-        backgroundColor: 'rgba(255, 215, 0, 0.1)',
-        paddingHorizontal: 8,
-        paddingVertical: 3,
-        borderRadius: 6,
-    },
-    devBadgeText: {
-        fontSize: 8,
-        fontWeight: '900',
-        color: COLORS.accent,
-        letterSpacing: 1,
-    },
-    devClickHint: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        marginTop: 10,
-    },
-    devClickText: {
-        fontSize: 10,
-        fontWeight: 'bold',
-        color: COLORS.accent,
-        marginRight: 5,
-        letterSpacing: 1,
+        justifyContent: 'center',
     },
     // Custom Modal Styles
     modalOverlay: {
@@ -625,17 +609,26 @@ const styles = StyleSheet.create({
     },
     deleteModalContent: {
         width: '90%',
-        backgroundColor: '#1E293B',
+        backgroundColor: colors.surfaceElevated,
         borderRadius: 30,
         padding: 25,
         alignItems: 'center',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.1)',
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.3,
-        shadowRadius: 15,
-        elevation: 10,
+        ...Platform.select({
+            ios: {
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.3,
+                shadowRadius: 15,
+            },
+            android: {
+                elevation: 10,
+            },
+            web: {
+                boxShadow: '0px 10px 15px rgba(0,0,0,0.3)'
+            }
+        }),
     },
     warningIconContainer: {
         width: 80,
@@ -649,7 +642,7 @@ const styles = StyleSheet.create({
     deleteModalTitle: {
         fontSize: 22,
         fontWeight: 'bold',
-        color: COLORS.secondary,
+        color: colors.secondary,
         textAlign: 'center',
         marginBottom: 10,
     },
@@ -675,7 +668,7 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.1)',
     },
     modalCancelText: {
-        color: COLORS.secondary,
+        color: colors.secondary,
         fontWeight: '600',
     },
     modalDeleteBtn: {
@@ -684,11 +677,20 @@ const styles = StyleSheet.create({
         borderRadius: 15,
         backgroundColor: '#FF5252',
         alignItems: 'center',
-        shadowColor: "#FF5252",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 6,
-        elevation: 5,
+        ...Platform.select({
+            ios: {
+                shadowColor: "#FF5252",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 6,
+            },
+            android: {
+                elevation: 5,
+            },
+            web: {
+                boxShadow: '0px 4px 6px rgba(255, 82, 82, 0.3)'
+            }
+        }),
     },
     modalDeleteText: {
         color: 'white',
@@ -697,21 +699,30 @@ const styles = StyleSheet.create({
     // Edit Modal Specifics
     editModalContent: {
         width: '90%',
-        backgroundColor: '#1E293B',
+        backgroundColor: colors.surfaceElevated,
         borderRadius: 30,
         padding: 25,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.1)',
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.3,
-        shadowRadius: 15,
-        elevation: 10,
+        ...Platform.select({
+            ios: {
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.3,
+                shadowRadius: 15,
+            },
+            android: {
+                elevation: 10,
+            },
+            web: {
+                boxShadow: '0px 10px 15px rgba(0,0,0,0.3)'
+            }
+        }),
     },
     editModalTitle: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: COLORS.secondary,
+        color: colors.secondary,
         marginBottom: 25,
         textAlign: 'center',
     },
@@ -738,13 +749,22 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingVertical: 15,
         borderRadius: 15,
-        backgroundColor: COLORS.accent,
+        backgroundColor: colors.accent,
         alignItems: 'center',
-        shadowColor: COLORS.accent,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 6,
-        elevation: 5,
+        ...Platform.select({
+            ios: {
+                shadowColor: colors.accent,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 6,
+            },
+            android: {
+                elevation: 5,
+            },
+            web: {
+                boxShadow: `0px 4px 6px ${colors.accent}4D` // 4D is 30% opacity
+            }
+        }),
     },
     modalSaveText: {
         color: 'black',

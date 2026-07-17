@@ -6,7 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
-import { COLORS, SIZES, FONTS } from '../constants/theme';
+import { SIZES, FONTS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import ProductCard from '../components/ProductCard';
 import SplitScreen from '../components/SplitScreen';
 import BackButton from '../components/BackButton';
@@ -14,6 +15,8 @@ import BackButton from '../components/BackButton';
 const { width } = Dimensions.get('window');
 
 const FavoritesScreen = () => {
+    const { colors } = useTheme();
+    const styles = React.useMemo(() => createStyles(colors), [colors]);
     const insets = useSafeAreaInsets();
     const navigation = useNavigation();
     const { favorites, addToCart } = useCart();
@@ -25,14 +28,14 @@ const FavoritesScreen = () => {
         Animated.timing(fadeAnim, {
             toValue: 1,
             duration: 800,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== 'web',
         }).start();
     }, []);
 
     const renderHeader = () => (
         <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
             <View style={styles.headerLeft}>
-                <BackButton color={COLORS.secondary} />
+                <BackButton color={colors.secondary} />
                 <Text style={styles.headerTitle}>{t('favoritesTitle')}</Text>
             </View>
         </View>
@@ -50,7 +53,7 @@ const FavoritesScreen = () => {
                 onPress={() => navigation.navigate('HomeTab')}
             >
                 <LinearGradient
-                    colors={[COLORS.primary, '#E11D48']}
+                    colors={colors.primaryGradient}
                     style={styles.browseBtnGradient}
                 >
                     <Text style={styles.browseBtnText}>{t('browseMenu')}</Text>
@@ -75,7 +78,6 @@ const FavoritesScreen = () => {
                                     <ProductCard
                                         item={item}
                                         index={index}
-                                        navigation={navigation}
                                         addToCart={addToCart}
                                     />
                                 )}
@@ -92,10 +94,10 @@ const FavoritesScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.background,
+        backgroundColor: colors.background,
     },
     main: {
         flex: 1,
@@ -114,7 +116,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: COLORS.secondary,
+        color: colors.secondary,
         marginLeft: 15,
     },
     content: {
@@ -150,7 +152,7 @@ const styles = StyleSheet.create({
     emptyTitle: {
         fontSize: 22,
         fontWeight: 'bold',
-        color: COLORS.secondary,
+        color: colors.secondary,
         marginBottom: 10,
     },
     emptySubtitle: {

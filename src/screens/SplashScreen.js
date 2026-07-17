@@ -1,7 +1,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Dimensions, Image, Animated, Platform } from 'react-native';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import { useLanguage } from '../context/LanguageContext';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,6 +9,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 const { width, height } = Dimensions.get('window');
 
 const Particle = ({ delay, startPos }) => {
+    const { colors } = useTheme();
+    const styles = React.useMemo(() => createStyles(colors), [colors]);
     const moveAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -53,6 +55,8 @@ const Particle = ({ delay, startPos }) => {
 };
 
 const SplashScreen = () => {
+    const { colors } = useTheme();
+    const styles = React.useMemo(() => createStyles(colors), [colors]);
     const { t } = useLanguage();
     const scaleAnim = useRef(new Animated.Value(0)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -150,7 +154,7 @@ const SplashScreen = () => {
     return (
         <View style={styles.container}>
             <LinearGradient
-                colors={COLORS.primaryGradient}
+                colors={colors.primaryGradient}
                 style={StyleSheet.absoluteFill}
             />
 
@@ -217,10 +221,10 @@ const SplashScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.primary,
+        backgroundColor: colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
         overflow: 'hidden',
@@ -246,7 +250,7 @@ const styles = StyleSheet.create({
         width: 3,
         height: 3,
         borderRadius: 1.5,
-        backgroundColor: COLORS.accent,
+        backgroundColor: colors.accent,
     },
     logoContainer: {
         alignItems: 'center',
@@ -259,10 +263,19 @@ const styles = StyleSheet.create({
         borderRadius: 90,
         backgroundColor: '#FFF',
         padding: 5,
-        elevation: 15,
-        shadowColor: COLORS.accent,
-        shadowOpacity: 0.3,
-        shadowRadius: 20,
+        ...Platform.select({
+            ios: {
+                shadowColor: colors.accent,
+                shadowOpacity: 0.3,
+                shadowRadius: 20,
+            },
+            android: {
+                elevation: 15,
+            },
+            web: {
+                boxShadow: `0px 0px 20px ${colors.accent}4D` // 4D is 30% opacity
+            }
+        }),
         overflow: 'hidden'
     },
     logo: {
@@ -282,25 +295,39 @@ const styles = StyleSheet.create({
     appName: {
         fontSize: 38,
         fontWeight: 'bold',
-        color: COLORS.secondary,
+        color: colors.secondary,
         letterSpacing: 10,
-        textShadowColor: 'rgba(255, 215, 0, 0.5)',
-        textShadowOffset: { width: 0, height: 0 },
-        textShadowRadius: 15,
+        ...Platform.select({
+            ios: {
+                textShadowColor: 'rgba(255, 215, 0, 0.5)',
+                textShadowOffset: { width: 0, height: 0 },
+                textShadowRadius: 15,
+            },
+            web: {
+                textShadow: '0px 0px 15px rgba(255, 215, 0, 0.5)'
+            }
+        })
     },
     divider: {
         width: 60,
         height: 3,
-        backgroundColor: COLORS.accent,
+        backgroundColor: colors.accent,
         marginVertical: 15,
         borderRadius: 2,
-        shadowColor: COLORS.accent,
-        shadowOpacity: 1,
-        shadowRadius: 10,
+        ...Platform.select({
+            ios: {
+                shadowColor: colors.accent,
+                shadowOpacity: 1,
+                shadowRadius: 10,
+            },
+            web: {
+                boxShadow: `0px 0px 10px ${colors.accent}`
+            }
+        })
     },
     subText: {
         fontSize: 14,
-        color: COLORS.secondary,
+        color: colors.secondary,
         letterSpacing: 3,
         opacity: 0.8,
     },
@@ -317,12 +344,12 @@ const styles = StyleSheet.create({
         width: 6,
         height: 6,
         borderRadius: 3,
-        backgroundColor: COLORS.accent,
+        backgroundColor: colors.accent,
         marginHorizontal: 4,
         opacity: 0.5,
     },
     footerText: {
-        color: COLORS.secondary,
+        color: colors.secondary,
         letterSpacing: 2,
         fontSize: 10,
         opacity: 0.6

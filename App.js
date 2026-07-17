@@ -6,12 +6,11 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import HomeScreen from './src/screens/HomeScreen';
-import ProductDetailsScreen from './src/screens/ProductDetailsScreen';
 import CheckoutScreen from './src/screens/CheckoutScreen';
 import SplashScreen from './src/screens/SplashScreen';
-import { COLORS } from './src/constants/theme';
 import { CartProvider } from './src/context/CartContext';
 import { LanguageProvider } from './src/context/LanguageContext';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { ToastProvider } from './src/context/ToastContext';
 import { AuthProvider } from './src/context/AuthContext';
 import TabNavigator from './src/navigation/TabNavigator';
@@ -27,6 +26,7 @@ const Stack = createNativeStackNavigator();
 
 const AppStack = () => {
   const { user, loading } = useAuth();
+  const { colors } = useTheme();
   const [minimumSplashTimeDone, setMinimumSplashTimeDone] = React.useState(false);
 
   React.useEffect(() => {
@@ -45,7 +45,7 @@ const AppStack = () => {
       key={showSplash ? 'splash' : user ? 'main' : 'auth'}
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: COLORS.background },
+        contentStyle: { backgroundColor: colors.background },
       }}
     >
       {showSplash ? (
@@ -55,7 +55,6 @@ const AppStack = () => {
       ) : (
         <>
           <Stack.Screen name="Main" component={TabNavigator} />
-          <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
           <Stack.Screen name="SettingDetail" component={SettingDetailScreen} />
           <Stack.Screen name="DeveloperPortfolio" component={DeveloperPortfolioScreen} />
           <Stack.Screen name="Favorites" component={FavoritesScreen} />
@@ -65,28 +64,55 @@ const AppStack = () => {
   );
 };
 
+const AppContent = () => {
+  const { colors } = useTheme();
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.primary }}>
+      <StatusBar style="light" translucent backgroundColor="transparent" />
+      <NavigationContainer
+        theme={{
+          dark: true,
+          colors: {
+            primary: colors.primary,
+            background: colors.background,
+            card: colors.surface,
+            text: colors.text,
+            border: colors.glassBorder,
+            notification: colors.accent,
+          },
+          fonts: {
+            regular: { fontFamily: 'System', fontWeight: '400' },
+            medium: { fontFamily: 'System', fontWeight: '500' },
+            bold: { fontFamily: 'System', fontWeight: '700' },
+            heavy: { fontFamily: 'System', fontWeight: '900' },
+          },
+        }}
+        documentTitle={{
+          formatter: (options, route) => `Al Noor Fast Food - ${route?.name || 'Loading'}`,
+        }}
+      >
+        <AppStack />
+      </NavigationContainer>
+      <Toast />
+    </View>
+  );
+};
+
 export default function App() {
   return (
     <SafeAreaProvider>
-      <LanguageProvider>
-        <AuthProvider>
-          <ToastProvider>
-            <CartProvider>
-              <View style={{ flex: 1, backgroundColor: COLORS.primary }}>
-                <StatusBar style="light" translucent backgroundColor="transparent" />
-                <NavigationContainer
-                  documentTitle={{
-                    formatter: (options, route) => `Al Noor Fast Food - ${route?.name || 'Loading'}`,
-                  }}
-                >
-                  <AppStack />
-                </NavigationContainer>
-                <Toast />
-              </View>
-            </CartProvider>
-          </ToastProvider>
-        </AuthProvider>
-      </LanguageProvider>
+      <ThemeProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <CartProvider>
+                <AppContent />
+              </CartProvider>
+            </ToastProvider>
+          </AuthProvider>
+        </LanguageProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }
